@@ -1,0 +1,19 @@
+__pycache__/
+*.pyc
+.env
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# scan artifacts
+reports/*.html
+reports/*.json
+!reports/.gitkeep
+
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+*.pem
