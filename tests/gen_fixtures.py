@@ -64,7 +64,7 @@ SCENARIOS = {
         ("LNX-3.5.1", 1): ("inactive", 3),                  # no firewall -> FAIL
         ("LNX-6.1.1", 0): ("644", 0),
         ("LNX-6.1.2", 0): ("0", 0),
-        ("LNX-6.1.10", 0): ("/opt/app/shared/scratch.sh", 0),   # world-writable -> FAIL
+        ("LNX-6.1.10", 0): ("3", 0),                        # 3 world-writable files -> FAIL
         ("LNX-6.1.13", 0): (SUID_LIST, 0),                  # manual -> WARN + list
         ("LNX-2.2.1", 0): ("1", 0),                         # vsftpd installed -> FAIL
         ("LNX-5.4.1", 0): ("", 1),                          # minlen unset -> WARN, not PASS
@@ -81,7 +81,7 @@ SCENARIOS = {
         ("LNX-3.5.1", 1): ("inactive", 3),                  # firewalld alone satisfies 'any'
         ("LNX-6.1.1", 0): ("644", 0),
         ("LNX-6.1.2", 0): ("0", 0),
-        ("LNX-6.1.10", 0): ("", 0),
+        ("LNX-6.1.10", 0): ("0", 0),
         ("LNX-6.1.13", 0): (SUID_LIST, 0),
         ("LNX-2.2.1", 0): ("0", 0),
         ("LNX-5.4.1", 0): ("14", 0),
@@ -89,6 +89,15 @@ SCENARIOS = {
         ("LNX-4.1.1", 0): ("active", 0),
         ("LNX-4.1.1", 1): ("active", 0),
         ("LNX-1.9", 0): ("3", 0),
+    },
+    # the scanner account can reach the host but sudo is refused, so the helper
+    # prints nothing — these controls must report WARN, not a fabricated pass
+    "linux/sudo_denied": {
+        ("LNX-5.2.8", 0): (SSHD_HARDENED, 0),
+        ("LNX-5.2.9", 0): (SSHD_HARDENED, 0),
+        ("LNX-6.1.10", 0): ("", 1),
+        ("LNX-6.1.13", 0): ("", 1),
+        ("LNX-5.3.4", 0): ("", 1),
     },
     # nothing recorded -> every probe is 'unreachable' -> every check WARN
     "linux/unreachable": {},

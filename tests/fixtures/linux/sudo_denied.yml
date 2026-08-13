@@ -1,0 +1,18 @@
+cat '/etc/ssh/sshd_config' 2>/dev/null:
+  exit_status: 0
+  stdout: 'PermitRootLogin no
+
+    PasswordAuthentication no
+
+    Port 22
+
+    '
+sudo -n /usr/local/sbin/hardening-scan-helper sudoers:
+  exit_status: 1
+  stdout: ''
+sudo -n /usr/local/sbin/hardening-scan-helper suid:
+  exit_status: 1
+  stdout: ''
+sudo -n /usr/local/sbin/hardening-scan-helper world-writable:
+  exit_status: 1
+  stdout: ''

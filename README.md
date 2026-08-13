@@ -36,10 +36,19 @@ membership, the SUID/SGID inventory) have no correct fixed baseline. They report
 WARN and carry their evidence into the report for a human, rather than being
 forced into a false pass or fail.
 
-**Scoring excludes what it can't judge.** Only `scored` controls that resolved to
-a definite PASS/FAIL count toward the score; WARNs are reported separately rather
-than quietly inflating or deflating it. Controls with no safe unattended fix
-(BitLocker on a running instance) are `notscored`, mirroring CIS's own model.
+**Scoring excludes what it can't judge, and says so.** Only `scored` controls that
+resolved to a definite PASS/FAIL count toward the score. Because that means a
+score can be computed from a small subset, **coverage travels with it everywhere**
+— `100% (verified 2/11 scored controls)` is a different claim from `100%
+(verified 11/11)`, and the CLI and report both flag partial coverage explicitly.
+Controls with no safe unattended fix (BitLocker on a running instance) are
+`notscored`, mirroring CIS's own model.
+
+**Elevation fails closed.** Controls needing root (`/etc/sudoers`, a full-filesystem
+find) run through a root-owned helper granted via three fixed sudo verbs. The
+helper prints nothing when it can't run, which reports WARN — an earlier version
+piped through `wc -l`, so a permission error produced `0` and the sudoers audit
+could never fail.
 
 **Host-side date math.** Patch recency is computed on the target and returned as
 an integer age, so results don't depend on the scanner's clock and recorded test
@@ -47,12 +56,17 @@ fixtures don't rot.
 
 **Least privilege on the tool itself.** The scanner authenticates as
 `svc-hardening-scanner` — on Windows a member of Remote Management Users, not
-Administrators; on Linux an account whose sudoers entry lists the exact read-only
-commands it runs, no `NOPASSWD: ALL`. Credentials come from environment
-variables, never the repo. In production this would be AWS Secrets Manager.
+Administrators; on Linux an account granted sudo on three fixed helper verbs and
+nothing else, no `NOPASSWD: ALL`. The sudoers entries carry no wildcards on
+purpose: a wildcarded `sudo find` entry accepts `-exec`, which hands out a root
+shell and undoes the whole point. Credentials come from environment variables,
+never the repo. In production this would be AWS Secrets Manager.
 
-**WinRM over HTTPS only.** The bootstrap script configures the 5986 listener and
-deletes the 5985 cleartext one; the security group never opens 5985.
+**WinRM over HTTPS, validated.** The bootstrap script configures the 5986 listener
+and deletes the 5985 cleartext one; the security group never opens 5985.
+Certificate validation is on by default — skipping it requires an explicit
+`--insecure` that prints a warning, since a security tool putting NTLM
+credentials on an unvalidated channel is the flaw it exists to report.
 
 ## Rule format
 
@@ -138,7 +152,12 @@ sudo ./bootstrap_linux.sh "$(cat ~/.ssh/id_ed25519.pub)"   # on the RHEL host
 ```
 
 Each prints the environment variables to export on the scanning machine. Nothing
-is written to the repo.
+is written to the repo. The Linux script also installs the root-owned scan helper
+to `/usr/local/sbin/hardening-scan-helper`.
+
+The Windows bootstrap creates a self-signed certificate, so the first live scan
+needs either that cert trusted on the scanning machine or an explicit
+`--insecure` flag.
 
 ## Running
 

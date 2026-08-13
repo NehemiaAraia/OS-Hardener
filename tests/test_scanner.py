@@ -9,7 +9,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from scanner.connection import make_connection  # noqa: E402
-from scanner.model import Status  # noqa: E402
+from scanner.connection.base import CommandOutput  # noqa: E402
+from scanner.evaluator import _match, evaluate  # noqa: E402
+from scanner.model import Check, Status  # noqa: E402
 from scanner.parser import load_policies, parse_subrule  # noqa: E402
 from scanner.scanner import run_scan  # noqa: E402
 
@@ -122,3 +124,77 @@ def test_manual_control_is_warn_but_still_collects_evidence():
     suid = r["LNX-6.1.13"]
     assert suid.status is Status.WARN
     assert "/usr/bin/sudo" in suid.evidence[0].output
+
+
+# --- regressions: each of these passed a control it should not have -----------
+
+@pytest.mark.parametrize(
+    "mode,allowed,expected",
+    [
+        ("640", "0640", True),
+        ("600", "0640", True),
+        ("644", "0640", False),   # group+other read
+        ("007", "0640", False),   # world rwx — numerically small, wildly permissive
+        ("466", "0640", False),
+        ("777", "0640", False),
+    ],
+)
+def test_maxmode_compares_bits_not_magnitude(mode, allowed, expected):
+    out = CommandOutput(stdout=mode, exit_status=0, ok=True)
+    assert _match(f"maxmode:{allowed}", out) is expected
+
+
+def test_service_state_unknown_when_probe_fails():
+    """An errored service probe is unknown, not 'not running'."""
+    failed = CommandOutput(stdout="", exit_status=1, ok=True)
+    assert _match("stopped:", failed) is None
+    assert _match("running:", failed) is None
+
+
+def test_service_state_reads_the_state_word_not_the_exit_code():
+    """systemctl is-active exits 3 for an inactive unit — still a definite answer."""
+    inactive = CommandOutput(stdout="inactive", exit_status=3, ok=True)
+    assert _match("stopped:", inactive) is True
+    assert _match("running:", inactive) is False
+
+
+def test_absent_service_satisfies_stopped_only_on_clean_exit():
+    absent = CommandOutput(stdout="", exit_status=0, ok=True)
+    assert _match("stopped:", absent) is True
+
+
+def test_check_with_no_subrules_warns_instead_of_passing():
+    empty = Check(
+        id="X-1", title="nothing to verify", level="level1", scored="scored",
+        nist="NIST800-53R5_XX-1", scope="server", severity="high",
+        condition="all", rules=[],
+    )
+    conn = make_connection("fixture", scenario="linux/baseline")
+    assert evaluate(empty, "linux", conn).status is Status.WARN
+
+
+def test_unsupported_subrule_warns_instead_of_killing_the_scan():
+    bad = Check(
+        id="X-2", title="registry rule on linux", level="level1", scored="scored",
+        nist="NIST800-53R5_XX-2", scope="server", severity="high", condition="all",
+        rules=[parse_subrule("r:HKLM\\Foo -> Bar -> equals:1")],
+    )
+    conn = make_connection("fixture", scenario="linux/baseline")
+    result = evaluate(bad, "linux", conn)  # must not raise
+    assert result.status is Status.WARN
+
+
+def test_sudo_denied_never_fabricates_a_pass():
+    """The helper prints nothing when sudo is refused; these must not pass."""
+    r, summary = scan("linux", "sudo_denied")
+    for cid in ("LNX-5.3.4", "LNX-6.1.10", "LNX-6.1.13"):
+        assert r[cid].status is Status.WARN, cid
+    assert summary["coverage"] < 100
+
+
+def test_score_carries_coverage():
+    """A high score off a handful of verified controls must not read as complete."""
+    _, denied = scan("linux", "sudo_denied")
+    _, full = scan("linux", "hardened")
+    assert denied["score"] == 100 and denied["coverage"] < 30
+    assert full["score"] == 100 and full["coverage"] == 100
