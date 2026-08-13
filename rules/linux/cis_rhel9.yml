@@ -21,6 +21,20 @@ checks:
     rules:
       - "f:/etc/ssh/sshd_config -> regex:^\\s*PermitRootLogin\\s+no\\b"
 
+  - id: LNX-5.2.9
+    title: SSH password authentication disabled (key-only)
+    level: level1
+    scored: scored
+    scope: server
+    severity: high
+    nist: NIST800-53R5_IA-5_2
+    condition: all
+    remediation: Set 'PasswordAuthentication no' in /etc/ssh/sshd_config and reload sshd.
+    references:
+      - CIS 5.2.9
+    rules:
+      - "f:/etc/ssh/sshd_config -> regex:^\\s*PasswordAuthentication\\s+no\\b"
+
   - id: LNX-3.5.1
     title: host firewall active
     level: level1
@@ -33,8 +47,22 @@ checks:
     references:
       - CIS 3.5.1
     rules:
-      - "svc:firewalld -> running"
-      - "svc:nftables -> running"
+      - "svc:firewalld -> running:"
+      - "svc:nftables -> running:"
+
+  - id: LNX-6.1.1
+    title: /etc/passwd permissions (<= 0644)
+    level: level1
+    scored: scored
+    scope: server
+    severity: medium
+    nist: NIST800-53R5_AC-3
+    condition: all
+    remediation: chown root:root /etc/passwd && chmod 0644 /etc/passwd
+    references:
+      - CIS 6.1.1
+    rules:
+      - "perm:/etc/passwd -> maxmode:0644"
 
   - id: LNX-6.1.2
     title: /etc/shadow permissions (<= 0640)
@@ -49,3 +77,116 @@ checks:
       - CIS 6.1.2
     rules:
       - "perm:/etc/shadow -> maxmode:0640"
+
+  - id: LNX-6.1.10
+    title: No world-writable files
+    level: level2
+    scored: scored
+    scope: server
+    severity: medium
+    nist: NIST800-53R5_AC-3
+    condition: all
+    remediation: Remove the world-writable bit (chmod o-w) from the listed files.
+    references:
+      - CIS 6.1.10
+    rules:
+      - "cmd:find / -xdev -type f -perm -0002 2>/dev/null | head -20 -> absent:"
+
+  - id: LNX-6.1.13
+    title: SUID/SGID binary audit
+    level: level2
+    scored: notscored
+    scope: server
+    severity: medium
+    nist: NIST800-53R5_CM-7
+    condition: all
+    manual: true
+    description: >
+      A stock system legitimately ships SUID/SGID binaries, so there's no correct
+      pass/fail baseline — the list is collected and put in front of a reviewer.
+    remediation: Compare the listed binaries against the expected set for this build.
+    references:
+      - CIS 6.1.13
+    rules:
+      - "cmd:find / -xdev -type f -perm /6000 2>/dev/null | head -20 -> exists:"
+
+  - id: LNX-2.2.1
+    title: Legacy services not installed (telnet, rsh, ftp)
+    level: level1
+    scored: scored
+    scope: server
+    severity: high
+    nist: NIST800-53R5_CM-7
+    condition: all
+    remediation: dnf remove telnet-server rsh-server vsftpd
+    references:
+      - CIS 2.2.1
+    rules:
+      - "cmd:rpm -qa | grep -Ec '^(telnet-server|rsh-server|vsftpd)-' -> equals:0"
+
+  - id: LNX-5.4.1
+    title: Password policy (minlen 14+)
+    level: level1
+    scored: scored
+    scope: server
+    severity: high
+    nist: NIST800-53R5_IA-5_1_a
+    condition: all
+    description: >
+      An unset minlen returns no value, which reports WARN rather than passing —
+      absence of a policy is not evidence of a compliant one.
+    remediation: Set 'minlen = 14' in /etc/security/pwquality.conf
+    references:
+      - CIS 5.4.1
+    rules:
+      - "cmd:grep -E '^\\s*minlen' /etc/security/pwquality.conf 2>/dev/null | awk -F= '{print $2}' | tr -d ' ' -> minint:14"
+
+  - id: LNX-5.3.4
+    title: Sudoers audit (no NOPASSWD:ALL)
+    level: level1
+    scored: scored
+    scope: server
+    severity: high
+    nist: NIST800-53R5_AC-6_5
+    condition: all
+    description: >
+      The scanner's own sudoers entry is command-scoped, so it does not trip this
+      control — least privilege applies to the tool as well as the target.
+    remediation: Remove blanket NOPASSWD:ALL grants from /etc/sudoers and /etc/sudoers.d.
+    references:
+      - CIS 5.3.4
+    rules:
+      - "cmd:grep -rEc '^[^#]*NOPASSWD:\\s*ALL' /etc/sudoers /etc/sudoers.d/ 2>/dev/null | awk -F: '{s+=$2} END {print s+0}' -> equals:0"
+
+  - id: LNX-4.1.1
+    title: auditd and rsyslog running
+    level: level1
+    scored: scored
+    scope: server
+    severity: medium
+    nist: NIST800-53R5_AU-2
+    condition: all
+    remediation: systemctl enable --now auditd rsyslog
+    references:
+      - CIS 4.1.1.1
+      - CIS 4.2.1.1
+    rules:
+      - "svc:auditd -> running:"
+      - "svc:rsyslog -> running:"
+
+  - id: LNX-1.9
+    title: Patch recency (last update within 35 days)
+    level: level1
+    scored: scored
+    scope: server
+    severity: high
+    nist: NIST800-53R5_SI-2
+    condition: all
+    description: >
+      Age is computed on the host from the newest package install time, so the
+      result doesn't depend on the scanner's clock.
+    remediation: dnf update
+    references:
+      - CIS 1.9
+    rules:
+      - "cmd:echo $(( ( $(date +%s) - $(rpm -qa --qf '%{INSTALLTIME}\\n' | sort -n | tail -1) ) / 86400 )) -> maxint:35"

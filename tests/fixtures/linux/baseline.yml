@@ -2,15 +2,48 @@ cat '/etc/ssh/sshd_config' 2>/dev/null:
   exit_status: 0
   stdout: 'PermitRootLogin yes
 
+    PasswordAuthentication yes
+
     Port 22
 
     '
+echo $(( ( $(date +%s) - $(rpm -qa --qf '%{INSTALLTIME}\n' | sort -n | tail -1) ) / 86400 )):
+  exit_status: 0
+  stdout: '3'
+find / -xdev -type f -perm -0002 2>/dev/null | head -20:
+  exit_status: 0
+  stdout: /opt/app/shared/scratch.sh
+find / -xdev -type f -perm /6000 2>/dev/null | head -20:
+  exit_status: 0
+  stdout: '/usr/bin/sudo
+
+    /usr/bin/passwd
+
+    /usr/bin/su'
+grep -E '^\s*minlen' /etc/security/pwquality.conf 2>/dev/null | awk -F= '{print $2}' | tr -d ' ':
+  exit_status: 1
+  stdout: ''
+'grep -rEc ''^[^#]*NOPASSWD:\s*ALL'' /etc/sudoers /etc/sudoers.d/ 2>/dev/null | awk -F: ''{s+=$2} END {print s+0}''':
+  exit_status: 0
+  stdout: '1'
+rpm -qa | grep -Ec '^(telnet-server|rsh-server|vsftpd)-':
+  exit_status: 0
+  stdout: '1'
+stat -c '%a' '/etc/passwd':
+  exit_status: 0
+  stdout: '644'
 stat -c '%a' '/etc/shadow':
   exit_status: 0
-  stdout: '640'
+  stdout: '0'
+systemctl is-active 'auditd':
+  exit_status: 0
+  stdout: active
 systemctl is-active 'firewalld':
   exit_status: 3
   stdout: inactive
 systemctl is-active 'nftables':
+  exit_status: 3
+  stdout: inactive
+systemctl is-active 'rsyslog':
   exit_status: 3
   stdout: inactive

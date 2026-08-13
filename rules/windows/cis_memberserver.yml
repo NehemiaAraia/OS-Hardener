@@ -54,7 +54,129 @@ checks:
     description: >
       Membership of the local Administrators group is site-specific and can't be
       auto-verified against a fixed baseline — flagged for manual review.
-    remediation: Review 'Get-LocalGroupMember Administrators' against the approved list.
+    remediation: Review the listed members against the approved administrator list.
     references:
       - CIS 2.3.1
-    rules: []
+    rules:
+      - "cmd:Get-LocalGroupMember -Group 'Administrators' | Select-Object -ExpandProperty Name -> exists:"
+
+  - id: WIN-2.3.1.1
+    title: Guest account disabled
+    level: level1
+    scored: scored
+    scope: memberserver
+    severity: high
+    nist: NIST800-53R5_AC-2
+    condition: all
+    remediation: Disable-LocalUser -Name 'Guest'
+    references:
+      - CIS 2.3.1.1
+    rules:
+      - "cmd:(Get-LocalUser -Name 'Guest').Enabled -> equals:False"
+
+  - id: WIN-1.1.1
+    title: Minimum password length (14+)
+    level: level1
+    scored: scored
+    scope: memberserver
+    severity: high
+    nist: NIST800-53R5_IA-5_1_a
+    condition: all
+    remediation: net accounts /minpwlen:14
+    references:
+      - CIS 1.1.4
+    rules:
+      - "cmd:(net accounts | Select-String 'Minimum password length').Line.Split(':')[1].Trim() -> minint:14"
+
+  - id: WIN-1.1.5
+    title: Password complexity enabled
+    level: level1
+    scored: scored
+    scope: memberserver
+    severity: high
+    nist: NIST800-53R5_IA-5_1_a
+    condition: all
+    remediation: Enable 'Password must meet complexity requirements' in local security policy.
+    references:
+      - CIS 1.1.5
+    rules:
+      - "cmd:secedit /export /cfg $env:TEMP\\sec.cfg | Out-Null; (Select-String -Path $env:TEMP\\sec.cfg -Pattern 'PasswordComplexity').Line.Split('=')[1].Trim() -> equals:1"
+
+  - id: WIN-2.3.7.4
+    title: RDP requires Network Level Authentication
+    level: level1
+    scored: scored
+    scope: memberserver
+    severity: high
+    nist: NIST800-53R5_IA-2
+    condition: all
+    remediation: Set UserAuthentication to 1 on the RDP-Tcp listener.
+    references:
+      - CIS 2.3.7.4
+    rules:
+      - "r:HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp -> UserAuthentication -> equals:1"
+
+  - id: WIN-17.1
+    title: Audit logging for logon events (success and failure)
+    level: level1
+    scored: scored
+    scope: memberserver
+    severity: medium
+    nist: NIST800-53R5_AU-2
+    condition: all
+    remediation: auditpol /set /subcategory:"Logon" /success:enable /failure:enable
+    references:
+      - CIS 17.1.1
+    rules:
+      - "cmd:(auditpol /get /subcategory:'Logon' | Select-String '  Logon').Line -> regex:Success and Failure"
+
+  - id: WIN-18.9.10
+    title: BitLocker enabled on the OS volume
+    level: level1
+    scored: notscored
+    scope: memberserver
+    severity: medium
+    nist: NIST800-53R5_SC-28
+    condition: all
+    description: >
+      Not scored — enabling BitLocker on a running cloud instance is disruptive
+      and has no safe unattended fix, so it reports as a finding for manual action
+      rather than dragging the score.
+    remediation: No safe auto-fix defined — enable BitLocker during a planned maintenance window.
+    references:
+      - CIS 18.9.10
+    rules:
+      - "cmd:(Get-BitLockerVolume -MountPoint $env:SystemDrive).ProtectionStatus -> equals:On"
+
+  - id: WIN-5.1
+    title: Legacy services disabled (Telnet, Remote Registry)
+    level: level1
+    scored: scored
+    scope: memberserver
+    severity: medium
+    nist: NIST800-53R5_CM-7
+    condition: all
+    remediation: Stop-Service and Set-Service -StartupType Disabled for TlntSvr and RemoteRegistry.
+    references:
+      - CIS 5.1
+      - CIS 5.26
+    rules:
+      - "svc:TlntSvr -> stopped:"
+      - "svc:RemoteRegistry -> stopped:"
+
+  - id: WIN-18.10.42
+    title: Patch recency (last update within 35 days)
+    level: level1
+    scored: scored
+    scope: memberserver
+    severity: high
+    nist: NIST800-53R5_SI-2
+    condition: all
+    description: >
+      Age is computed on the host so the result doesn't depend on the scanner's
+      clock; an unparseable result reports WARN rather than passing.
+    remediation: Install pending updates (Install-WindowsUpdate / WSUS cycle).
+    references:
+      - CIS 18.10.42
+    rules:
+      - "cmd:[int]((Get-Date) - (Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 1).InstalledOn).TotalDays -> maxint:35"

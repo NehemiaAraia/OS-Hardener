@@ -1,3 +1,21 @@
+(Get-BitLockerVolume -MountPoint $env:SystemDrive).ProtectionStatus:
+  exit_status: 0
+  stdout: 'Off'
+(Get-LocalUser -Name 'Guest').Enabled:
+  exit_status: 0
+  stdout: 'False'
+(Get-Service -Name 'RemoteRegistry' -ErrorAction SilentlyContinue).Status:
+  exit_status: 0
+  stdout: Running
+(Get-Service -Name 'TlntSvr' -ErrorAction SilentlyContinue).Status:
+  exit_status: 0
+  stdout: ''
+(auditpol /get /subcategory:'Logon' | Select-String '  Logon').Line:
+  exit_status: 0
+  stdout: '  Logon                    Success'
+(net accounts | Select-String 'Minimum password length').Line.Split(':')[1].Trim():
+  exit_status: 0
+  stdout: '7'
 Get-ItemPropertyValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\WindowsFirewall\DomainProfile' -Name 'EnableFirewall':
   exit_status: 0
   stdout: '1'
@@ -7,6 +25,22 @@ Get-ItemPropertyValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\WindowsFirewall\P
 Get-ItemPropertyValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\WindowsFirewall\PublicProfile' -Name 'EnableFirewall':
   exit_status: 0
   stdout: '1'
+? Get-ItemPropertyValue -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp'
+  -Name 'UserAuthentication'
+: exit_status: 0
+  stdout: '1'
 Get-ItemPropertyValue -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters' -Name 'SMB1':
   exit_status: 0
+  stdout: '1'
+Get-LocalGroupMember -Group 'Administrators' | Select-Object -ExpandProperty Name:
+  exit_status: 0
+  stdout: 'Administrator
+
+    svc-deploy'
+'[int]((Get-Date) - (Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 1).InstalledOn).TotalDays':
+  exit_status: 0
+  stdout: '12'
+? secedit /export /cfg $env:TEMP\sec.cfg | Out-Null; (Select-String -Path $env:TEMP\sec.cfg
+  -Pattern 'PasswordComplexity').Line.Split('=')[1].Trim()
+: exit_status: 0
   stdout: '1'
