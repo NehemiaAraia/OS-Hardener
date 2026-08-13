@@ -35,11 +35,19 @@ _TEMPLATE = _ENV.from_string(
   <p class="text-muted">{{ meta.platform }} · {{ meta.host }} · {{ meta.timestamp }}</p>
 
   <div class="row g-3 my-3">
-    <div class="col"><div class="card text-center p-3"><div class="score-ring">{{ summary.score }}%</div><div>compliance score</div></div></div>
+    <div class="col"><div class="card text-center p-3"><div class="score-ring">{{ summary.score }}%</div><div>compliance score</div><div class="small text-muted">from {{ summary.scored_total }}/{{ summary.scored_defined }} scored controls</div></div></div>
     <div class="col"><div class="card text-center p-3"><div class="score-ring text-success">{{ summary.pass }}</div><div>PASS</div></div></div>
     <div class="col"><div class="card text-center p-3"><div class="score-ring text-danger">{{ summary.fail }}</div><div>FAIL</div></div></div>
     <div class="col"><div class="card text-center p-3"><div class="score-ring text-warning">{{ summary.warn }}</div><div>WARN</div></div></div>
   </div>
+
+  {% if summary.coverage < 100 %}
+  <div class="alert alert-warning">
+    <strong>Coverage {{ summary.coverage }}%.</strong>
+    {{ summary.scored_defined - summary.scored_total }} scored control(s) could not be
+    verified and are excluded from the score — treat it as a partial result.
+  </div>
+  {% endif %}
 
   <table class="table table-hover align-middle">
     <thead><tr><th>ID</th><th>Control</th><th>Status</th><th>Severity</th><th>NIST 800-53</th></tr></thead>

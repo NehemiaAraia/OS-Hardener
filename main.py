@@ -29,12 +29,20 @@ def _open_connection(target: str, args):
     """Build a connection backend. Credentials come from env vars, never flags."""
     if args.fixture:
         return make_connection("fixture", scenario=args.fixture)
+    if not args.host:
+        sys.exit("--host is required for a live scan (or use --fixture for offline dev)")
     if target == "windows":
         user = os.environ.get("WINRM_USER")
         password = os.environ.get("WINRM_PASS")
         if not user or not password:
             sys.exit("set WINRM_USER and WINRM_PASS (env vars) for a live Windows scan")
-        return make_connection("winrm", host=args.host, username=user, password=password)
+        return make_connection(
+            "winrm",
+            host=args.host,
+            username=user,
+            password=password,
+            insecure=args.insecure,
+        )
     user = os.environ.get("SSH_USER")
     key = os.environ.get("SSH_KEY")
     if not user or not key:
@@ -66,8 +74,15 @@ def cmd_scan(args) -> int:
 
     print(
         f"\n[*] scan complete: {summary['pass']} PASS / {summary['fail']} FAIL / "
-        f"{summary['warn']} WARN — compliance score: {summary['score']}%"
+        f"{summary['warn']} WARN — compliance score: {summary['score']}% "
+        f"(verified {summary['scored_total']}/{summary['scored_defined']} scored controls)"
     )
+    if summary["coverage"] < 100:
+        print(
+            f"[!] coverage {summary['coverage']}% — "
+            f"{summary['scored_defined'] - summary['scored_total']} scored control(s) "
+            f"could not be verified; the score above is computed only from those that were"
+        )
 
     ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     meta = {"platform": target, "host": host, "timestamp": ts}
@@ -81,9 +96,11 @@ def cmd_scan(args) -> int:
 
 
 def cmd_remediate(args) -> int:
-    print("[!] remediation lands in Tier 2 (Windows: Python backend, Linux: Ansible playbook).")
-    print("    scan is fully wired; remediation backends are the next build step.")
-    return 0
+    # exits non-zero on purpose: reporting success for work that didn't happen is
+    # the same class of lie as passing a control that wasn't verified
+    print("[!] remediation is not implemented yet (Tier 2).", file=sys.stderr)
+    print("    planned: Python backend for Windows, Ansible playbook for Linux.", file=sys.stderr)
+    return 2
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -94,6 +111,11 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--target", required=True, choices=["windows", "linux"])
     s.add_argument("--host", help="host/IP for a live scan")
     s.add_argument("--fixture", help="dev/CI only: replay a recorded fixture scenario instead of a live host")
+    s.add_argument(
+        "--insecure",
+        action="store_true",
+        help="skip TLS certificate validation (lab self-signed certs only)",
+    )
     s.set_defaults(func=cmd_scan)
 
     r = sub.add_parser("remediate", help="remediate failed controls (Tier 2)")

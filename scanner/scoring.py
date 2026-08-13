@@ -13,20 +13,24 @@ def summarize(results: list[CheckResult]) -> dict:
     for r in results:
         counts[r.status.value] += 1
 
-    scored = [
-        r for r in results
-        if r.check.scored == "scored" and r.status in (Status.PASS, Status.FAIL)
-    ]
+    defined = [r for r in results if r.check.scored == "scored"]
+    scored = [r for r in defined if r.status in (Status.PASS, Status.FAIL)]
     denom = len(scored)
     passed = sum(1 for r in scored if r.status is Status.PASS)
     score = round(100 * passed / denom) if denom else 0
+
+    # a score computed from two of eleven controls is not the same claim as one
+    # computed from all eleven, so coverage travels with it everywhere
+    coverage = round(100 * denom / len(defined)) if defined else 0
 
     return {
         "total": len(results),
         "pass": counts["PASS"],
         "fail": counts["FAIL"],
         "warn": counts["WARN"],
+        "scored_defined": len(defined),
         "scored_total": denom,
         "scored_pass": passed,
         "score": score,
+        "coverage": coverage,
     }
