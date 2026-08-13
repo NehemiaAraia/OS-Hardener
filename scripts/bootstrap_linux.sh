@@ -20,13 +20,17 @@ chmod 0600 "/home/$ACCOUNT/.ssh/authorized_keys"
 chown "$ACCOUNT:$ACCOUNT" "/home/$ACCOUNT/.ssh/authorized_keys"
 passwd --lock "$ACCOUNT" >/dev/null
 
-# only the commands the scanner actually needs, all read-only
+# root-owned helper; the account gets sudo on its fixed verbs, never on find or
+# grep directly
+HELPER=/usr/local/sbin/hardening-scan-helper
+install -m 0755 -o root -g root "$(dirname "$0")/hardening_scan_helper.sh" "$HELPER"
+
+# no wildcards: each entry is an exact command line, so no extra arguments
+# (-exec, -o, a different path) can be smuggled in
 cat > "/etc/sudoers.d/$ACCOUNT" <<EOF
-Cmnd_Alias SCAN_READ = /usr/bin/stat -c %a /etc/shadow, \\
-                       /usr/bin/stat -c %a /etc/passwd, \\
-                       /usr/bin/find / -xdev -type f -perm -0002 *, \\
-                       /usr/bin/find / -xdev -type f -perm /6000 *, \\
-                       /usr/bin/grep -rEc * /etc/sudoers /etc/sudoers.d/
+Cmnd_Alias SCAN_READ = $HELPER world-writable, \\
+                       $HELPER suid, \\
+                       $HELPER sudoers
 
 $ACCOUNT ALL=(root) NOPASSWD: SCAN_READ
 EOF

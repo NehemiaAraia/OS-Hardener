@@ -86,11 +86,14 @@ checks:
     severity: medium
     nist: NIST800-53R5_AC-3
     condition: all
+    description: >
+      Runs through the root-owned helper — an unprivileged find silently skips
+      directories it can't read and would under-report.
     remediation: Remove the world-writable bit (chmod o-w) from the listed files.
     references:
       - CIS 6.1.10
     rules:
-      - "cmd:find / -xdev -type f -perm -0002 2>/dev/null | head -20 -> absent:"
+      - "cmd:sudo -n /usr/local/sbin/hardening-scan-helper world-writable -> maxint:0"
 
   - id: LNX-6.1.13
     title: SUID/SGID binary audit
@@ -108,7 +111,7 @@ checks:
     references:
       - CIS 6.1.13
     rules:
-      - "cmd:find / -xdev -type f -perm /6000 2>/dev/null | head -20 -> exists:"
+      - "cmd:sudo -n /usr/local/sbin/hardening-scan-helper suid -> exists:"
 
   - id: LNX-2.2.1
     title: Legacy services not installed (telnet, rsh, ftp)
@@ -150,13 +153,16 @@ checks:
     nist: NIST800-53R5_AC-6_5
     condition: all
     description: >
-      The scanner's own sudoers entry is command-scoped, so it does not trip this
-      control — least privilege applies to the tool as well as the target.
+      /etc/sudoers is mode 0440, so an unprivileged read fails; the helper runs it
+      as root and prints nothing on failure, which reports WARN. Counting matches
+      client-side would have turned a permission error into a fabricated zero and
+      made this control impossible to fail. The scanner's own sudoers entry is
+      verb-scoped, so it does not trip this control.
     remediation: Remove blanket NOPASSWD:ALL grants from /etc/sudoers and /etc/sudoers.d.
     references:
       - CIS 5.3.4
     rules:
-      - "cmd:grep -rEc '^[^#]*NOPASSWD:\\s*ALL' /etc/sudoers /etc/sudoers.d/ 2>/dev/null | awk -F: '{s+=$2} END {print s+0}' -> equals:0"
+      - "cmd:sudo -n /usr/local/sbin/hardening-scan-helper sudoers -> maxint:0"
 
   - id: LNX-4.1.1
     title: auditd and rsyslog running

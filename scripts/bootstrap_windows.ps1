@@ -33,7 +33,15 @@ Write-Host "[*] account $AccountName created"
 $hostname = [System.Net.Dns]::GetHostByName($env:COMPUTERNAME).HostName
 $cert = New-SelfSignedCertificate -DnsName $hostname -CertStoreLocation Cert:\LocalMachine\My
 
-winrm delete winrm/config/Listener?Address=*+Transport=HTTP 2>$null
+# the HTTP listener may not exist on a re-run; a native command's stderr would
+# still be terminating under ErrorActionPreference=Stop, so isolate it
+try {
+    $ErrorActionPreference = "Continue"
+    winrm delete winrm/config/Listener?Address=*+Transport=HTTP 2>&1 | Out-Null
+} finally {
+    $ErrorActionPreference = "Stop"
+}
+
 New-Item -Path WSMan:\localhost\Listener -Transport HTTPS -Address * `
     -CertificateThumbPrint $cert.Thumbprint -Force | Out-Null
 
