@@ -43,10 +43,20 @@ def _match(matcher: str, out: CommandOutput) -> Optional[bool]:
             return int(text, 8) <= int(arg, 8)
         except ValueError:
             return None
+    if kind in ("maxint", "minint"):
+        if not (ran_clean and text):
+            return None
+        try:
+            value = int(text.splitlines()[0].strip())
+        except ValueError:
+            return None  # unparseable -> unknown, never a pass
+        return value <= int(arg) if kind == "maxint" else value >= int(arg)
     if kind in ("running", "active"):
         return ran_clean and text.lower() in ("running", "active")
     if kind in ("stopped", "inactive", "disabled"):
-        return text.lower() in ("stopped", "inactive", "disabled", "unknown")
+        # empty output means the service isn't installed at all, which satisfies
+        # a 'should not be running' control
+        return text.lower() in ("", "stopped", "inactive", "disabled", "unknown")
     if kind == "exists":
         return ran_clean and bool(text)
     if kind == "absent":
@@ -93,9 +103,11 @@ def _resolve(condition: str, evidence: list[Evidence]) -> Status:
 
 
 def evaluate(check: Check, platform: str, conn) -> CheckResult:
-    if check.manual:
-        return CheckResult(check, Status.WARN, "manual review required", [])
     evidence = [_evaluate_subrule(s, platform, conn) for s in check.rules]
+    if check.manual:
+        # evidence is still collected — the point of a manual control is to put
+        # the list in front of a human, not to hide it behind a WARN
+        return CheckResult(check, Status.WARN, "manual review required", evidence)
     status = _resolve(check.condition, evidence)
     if status is Status.WARN and any(e.output == "<unreachable>" for e in evidence):
         msg = "host unreachable or evidence unavailable — not passed by default"

@@ -17,7 +17,8 @@ def probe_command(sub: SubRule, platform: str) -> str:
             path = sub.target.replace("HKLM\\", "HKLM:\\").replace("HKCU\\", "HKCU:\\")
             return f"Get-ItemPropertyValue -Path '{path}' -Name '{sub.name}'"
         if t == "svc":
-            return f"Get-Service -Name '{sub.target}' | Select-Object -ExpandProperty Status"
+            # SilentlyContinue so an absent service returns empty rather than erroring
+            return f"(Get-Service -Name '{sub.target}' -ErrorAction SilentlyContinue).Status"
     else:  # linux
         if t == "f":
             return f"cat '{sub.target}' 2>/dev/null"
