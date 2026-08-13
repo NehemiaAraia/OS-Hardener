@@ -1,0 +1,51 @@
+policy:
+  id: cis_rhel9
+  name: CIS Red Hat Enterprise Linux 9 Benchmark
+  platform: linux
+
+requirements:
+  description: RHEL 9, scanned over SSH (key-based) as svc-hardening-scanner
+
+checks:
+  - id: LNX-5.2.8
+    title: root SSH login disabled
+    level: level1
+    scored: scored
+    scope: server
+    severity: high
+    nist: NIST800-53R5_AC-6_2
+    condition: all
+    remediation: Set 'PermitRootLogin no' in /etc/ssh/sshd_config and reload sshd.
+    references:
+      - CIS 5.2.8
+    rules:
+      - "f:/etc/ssh/sshd_config -> regex:^\\s*PermitRootLogin\\s+no\\b"
+
+  - id: LNX-3.5.1
+    title: host firewall active
+    level: level1
+    scored: scored
+    scope: server
+    severity: high
+    nist: NIST800-53R5_SC-7
+    condition: any
+    remediation: Enable firewalld (systemctl enable --now firewalld) or nftables.
+    references:
+      - CIS 3.5.1
+    rules:
+      - "svc:firewalld -> running"
+      - "svc:nftables -> running"
+
+  - id: LNX-6.1.2
+    title: /etc/shadow permissions (<= 0640)
+    level: level1
+    scored: scored
+    scope: server
+    severity: medium
+    nist: NIST800-53R5_AC-3
+    condition: all
+    remediation: chown root:root /etc/shadow && chmod 0000 /etc/shadow
+    references:
+      - CIS 6.1.2
+    rules:
+      - "perm:/etc/shadow -> maxmode:0640"

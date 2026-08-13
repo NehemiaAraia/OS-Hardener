@@ -1,0 +1,60 @@
+policy:
+  id: cis_windows_2022_memberserver
+  name: CIS Microsoft Windows Server 2022 Benchmark (member server)
+  platform: windows
+
+requirements:
+  description: Windows Server 2022, scanned over WinRM/HTTPS as svc-hardening-scanner
+
+checks:
+  - id: WIN-18.3.3
+    title: SMBv1 disabled
+    level: level1
+    scored: scored
+    scope: memberserver
+    severity: critical
+    nist: NIST800-53R5_CM-7
+    condition: all
+    description: >
+      Legacy SMBv1 (EternalBlue) lingers on manufacturing/OT equipment; the
+      server component must be off.
+    remediation: Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol
+    references:
+      - CIS 18.3.3
+    rules:
+      - "r:HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters -> SMB1 -> equals:0"
+
+  - id: WIN-9.1
+    title: Windows Firewall on all profiles
+    level: level1
+    scored: scored
+    scope: memberserver
+    severity: high
+    nist: NIST800-53R5_SC-7
+    condition: all
+    remediation: Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
+    references:
+      - CIS 9.1.1
+      - CIS 9.2.1
+      - CIS 9.3.1
+    rules:
+      - "r:HKLM\\SOFTWARE\\Policies\\Microsoft\\WindowsFirewall\\DomainProfile -> EnableFirewall -> equals:1"
+      - "r:HKLM\\SOFTWARE\\Policies\\Microsoft\\WindowsFirewall\\PrivateProfile -> EnableFirewall -> equals:1"
+      - "r:HKLM\\SOFTWARE\\Policies\\Microsoft\\WindowsFirewall\\PublicProfile -> EnableFirewall -> equals:1"
+
+  - id: WIN-2.3.1
+    title: Local Administrators membership
+    level: level1
+    scored: notscored
+    scope: memberserver
+    severity: high
+    nist: NIST800-53R5_AC-6
+    condition: all
+    manual: true
+    description: >
+      Membership of the local Administrators group is site-specific and can't be
+      auto-verified against a fixed baseline — flagged for manual review.
+    remediation: Review 'Get-LocalGroupMember Administrators' against the approved list.
+    references:
+      - CIS 2.3.1
+    rules: []
