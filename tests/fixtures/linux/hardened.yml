@@ -1,0 +1,16 @@
+cat '/etc/ssh/sshd_config' 2>/dev/null:
+  exit_status: 0
+  stdout: 'PermitRootLogin no
+
+    Port 22
+
+    '
+stat -c '%a' '/etc/shadow':
+  exit_status: 0
+  stdout: '0'
+systemctl is-active 'firewalld':
+  exit_status: 0
+  stdout: active
+systemctl is-active 'nftables':
+  exit_status: 3
+  stdout: inactive
