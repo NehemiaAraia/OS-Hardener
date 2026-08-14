@@ -16,6 +16,7 @@ from datetime import datetime, timezone
 
 from scanner import delta as delta_mod
 from scanner import remediation
+from scanner import waivers as waivers_mod
 from scanner.connection import make_connection
 from scanner.remediation import linux as linux_remediation
 from scanner.remediation import windows as win_remediation
@@ -68,9 +69,15 @@ def cmd_scan(args) -> int:
     host = args.host or "fixture"
     label = f"{host} ({args.fixture})" if args.fixture else host
     print(f"[*] connecting to {target} target ({label})...")
+    loaded = waivers_mod.load_waivers(args.waivers)
+    for problem in loaded.problems:
+        print(f"[!] waiver rejected — {problem}", file=sys.stderr)
+
     conn = _open_connection(target, args)
     try:
-        results, summary = run_scan(target, conn, RULES_DIR)
+        results, summary, notes = run_scan(
+            target, conn, RULES_DIR, waiver_list=loaded.waivers, host=host
+        )
     finally:
         conn.close()
 
@@ -80,17 +87,28 @@ def cmd_scan(args) -> int:
         color = _STATUS_COLOR.get(r.status.value, "")
         dots = "." * max(3, 52 - len(r.check.title))
         note = ""
-        if r.status.value == "FAIL":
+        if r.waived:
+            note = f"  (waived until {r.waiver.expires.isoformat()}, {r.waiver.ticket or r.waiver.owner})"
+        elif r.status.value == "FAIL":
             note = f"  ({r.check.severity})"
         elif r.status.value == "WARN":
             note = "  (manual review)" if r.check.manual else "  (review)"
         print(f"[{i}/{total}]  {r.check.id:<16} {r.check.title} {dots} {color}{r.status.value}{_RESET}{note}")
 
+    for note in notes:
+        print(f"[!] {note}")
+
+    waived_note = f" / {summary['waived']} WAIVED" if summary["waived"] else ""
     print(
         f"\n[*] scan complete: {summary['pass']} PASS / {summary['fail']} FAIL / "
-        f"{summary['warn']} WARN — compliance score: {summary['score']}% "
+        f"{summary['warn']} WARN{waived_note} — compliance score: {summary['score']}% "
         f"(verified {summary['scored_total']}/{summary['scored_defined']} scored controls)"
     )
+    if summary["waived"]:
+        print(
+            f"[*] {summary['waived']} finding(s) excluded from the score by documented "
+            f"waiver — still listed above"
+        )
     if summary["coverage"] < 100:
         print(
             f"[!] coverage {summary['coverage']}% — "
@@ -165,9 +183,14 @@ def cmd_remediate(args) -> int:
 
     # remediate only what a scan just found failing, rather than blanket-applying
     print(f"[*] scanning {target} target to find failing controls...")
+    loaded = waivers_mod.load_waivers(args.waivers)
     conn = _open_connection(target, args)
     try:
-        results, summary = run_scan(target, conn, RULES_DIR)
+        results, summary, notes = run_scan(
+            target, conn, RULES_DIR, waiver_list=loaded.waivers, host=host or "fixture"
+        )
+        for note in notes:
+            print(f"[!] {note}")
         catalog = win_remediation.CATALOG if target == "windows" else linux_remediation.CATALOG
         plan = remediation.build_plan(results, catalog, target, host or "fixture")
 
@@ -260,6 +283,8 @@ def build_parser() -> argparse.ArgumentParser:
         help="skip TLS certificate validation (lab self-signed certs only)",
     )
     s.add_argument("--db", default=DEFAULT_DB, help="scan history database")
+    s.add_argument("--waivers", default=waivers_mod.DEFAULT_WAIVERS,
+                   help="documented risk acceptances")
     s.set_defaults(func=cmd_scan)
 
     r = sub.add_parser("remediate", help="remediate controls a scan found failing")
@@ -267,6 +292,8 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--host")
     r.add_argument("--fixture", help="dev/CI only: replay a recorded fixture scenario")
     r.add_argument("--insecure", action="store_true", help=argparse.SUPPRESS)
+    r.add_argument("--waivers", default=waivers_mod.DEFAULT_WAIVERS,
+                   help="documented risk acceptances")
     g = r.add_mutually_exclusive_group()
     g.add_argument("--dry-run", action="store_true", help="show what would change (default)")
     g.add_argument("--apply", action="store_true", help="make live changes, after confirmation")

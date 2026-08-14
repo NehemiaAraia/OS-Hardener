@@ -39,7 +39,16 @@ _TEMPLATE = _ENV.from_string(
     <div class="col"><div class="card text-center p-3"><div class="score-ring text-success">{{ summary.pass }}</div><div>PASS</div></div></div>
     <div class="col"><div class="card text-center p-3"><div class="score-ring text-danger">{{ summary.fail }}</div><div>FAIL</div></div></div>
     <div class="col"><div class="card text-center p-3"><div class="score-ring text-warning">{{ summary.warn }}</div><div>WARN</div></div></div>
+    {% if summary.waived %}<div class="col"><div class="card text-center p-3"><div class="score-ring text-secondary">{{ summary.waived }}</div><div>WAIVED</div></div></div>{% endif %}
   </div>
+
+  {% if summary.waived %}
+  <div class="alert alert-secondary">
+    <strong>{{ summary.waived }} finding(s) excluded from the score by documented waiver.</strong>
+    They remain listed below with owner, ticket and expiry — a waiver removes a
+    finding from the score, never from the report.
+  </div>
+  {% endif %}
 
   {% if summary.coverage < 100 %}
   <div class="alert alert-warning">
@@ -61,6 +70,13 @@ _TEMPLATE = _ENV.from_string(
             <div class="mt-2 small">
               <div><strong>Level:</strong> {{ r.level }} · <strong>Scored:</strong> {{ r.scored }} · <strong>Scope:</strong> {{ r.scope }}</div>
               <div><strong>Message:</strong> {{ r.message }}</div>
+              {% if r.waiver %}
+                <div class="alert alert-secondary mt-2 mb-2 p-2">
+                  <strong>Risk accepted</strong> by {{ r.waiver.owner }}
+                  {% if r.waiver.ticket %}({{ r.waiver.ticket }}){% endif %},
+                  expires {{ r.waiver.expires }}.<br>{{ r.waiver.reason }}
+                </div>
+              {% endif %}
               {% if r.remediation %}<div><strong>Remediation:</strong> {{ r.remediation }}</div>{% endif %}
               {% for e in r.evidence %}
                 <div class="mt-1"><code>{{ e.rule }}</code> → satisfied={{ e.satisfied }}<br><code>{{ e.output }}</code></div>
@@ -72,6 +88,7 @@ _TEMPLATE = _ENV.from_string(
           {% if r.status == 'PASS' %}<span class="badge text-bg-success">PASS</span>
           {% elif r.status == 'FAIL' %}<span class="badge text-bg-danger">FAIL</span>
           {% else %}<span class="badge text-bg-warning">WARN</span>{% endif %}
+          {% if r.waived %}<span class="badge text-bg-secondary">WAIVED</span>{% endif %}
         </td>
         <td>{{ r.severity }}</td>
         <td><code>{{ r.nist }}</code></td>
