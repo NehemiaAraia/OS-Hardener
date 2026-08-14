@@ -1,4 +1,4 @@
-cat '/etc/ssh/sshd_config' 2>/dev/null:
+cat /etc/ssh/sshd_config 2>/dev/null:
   exit_status: 0
   stdout: 'PermitRootLogin yes
 
@@ -16,10 +16,10 @@ grep -E '^\s*minlen' /etc/security/pwquality.conf 2>/dev/null | awk -F= '{print 
 rpm -qa | grep -Ec '^(telnet-server|rsh-server|vsftpd)-':
   exit_status: 0
   stdout: '1'
-stat -c '%a' '/etc/passwd':
+stat -c '%a' /etc/passwd:
   exit_status: 0
   stdout: '644'
-stat -c '%a' '/etc/shadow':
+stat -c '%a' /etc/shadow:
   exit_status: 0
   stdout: '0'
 sudo -n /usr/local/sbin/hardening-scan-helper sudoers:
@@ -35,15 +35,15 @@ sudo -n /usr/local/sbin/hardening-scan-helper suid:
 sudo -n /usr/local/sbin/hardening-scan-helper world-writable:
   exit_status: 0
   stdout: '3'
-systemctl is-active 'auditd':
+systemctl is-active auditd:
   exit_status: 0
   stdout: active
-systemctl is-active 'firewalld':
+systemctl is-active firewalld:
   exit_status: 3
   stdout: inactive
-systemctl is-active 'nftables':
+systemctl is-active nftables:
   exit_status: 3
   stdout: inactive
-systemctl is-active 'rsyslog':
+systemctl is-active rsyslog:
   exit_status: 3
   stdout: inactive

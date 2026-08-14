@@ -4,8 +4,6 @@ import io
 import sys
 from pathlib import Path
 
-import pytest
-
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
@@ -216,3 +214,36 @@ def test_every_catalog_fix_maps_to_a_real_control():
             c.id for pol in load_policies(ROOT / "rules", platform) for c in pol.checks
         }
         assert set(catalog) <= known, f"{platform}: {set(catalog) - known}"
+
+
+# --- input validation --------------------------------------------------------
+
+def test_host_validation_rejects_inventory_injection():
+    """Ansible's inline inventory is '<host>,' — an unchecked comma would extend
+    remediation to machines that were never named."""
+    from scanner.validate import valid_host
+
+    assert valid_host("10.0.0.5")
+    assert valid_host("ec2-1-2-3-4.compute.amazonaws.com")
+    for bad in ("10.0.0.5,10.0.0.99", "host with space", "a;rm -rf /", "$(whoami)", ""):
+        assert not valid_host(bad), bad
+
+
+def test_playbook_refuses_a_host_with_a_comma():
+    ok, detail = rem_linux.run_playbook(
+        "10.0.0.5,10.0.0.99", "u", "k", ["LNX-5.2.8"], check=True
+    )
+    assert ok is False and "invalid host" in detail
+
+
+def test_probe_commands_quote_their_targets():
+    """A rule file is trusted like code, but quoting keeps a typo from becoming
+    a shell escape."""
+    from scanner.executor import probe_command
+    from scanner.parser import parse_subrule
+
+    linux_cmd = probe_command(parse_subrule("f:/etc/foo;rm -rf / -> exists:"), "linux")
+    assert "'/etc/foo;rm -rf /'" in linux_cmd
+
+    win_cmd = probe_command(parse_subrule("svc:it's -> stopped:"), "windows")
+    assert "'it''s'" in win_cmd
