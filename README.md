@@ -199,8 +199,68 @@ NIST tagging, reporting, and remediation in one tool.
 - **atlantsecurity/windows-hardening-scripts** — DISA STIG angle
 - **JShielder** — Linux control selection
 
+## Remediation
+
+```bash
+python main.py remediate --target windows --host <ip> --dry-run   # default
+python main.py remediate --target windows --host <ip> --apply     # asks first
+python main.py scan      --target windows --host <ip>             # verify + delta
+```
+
+Remediation scans first and acts only on controls that came back **FAIL**. A WARN
+is never remediated: it means the control was not verified, and acting on an
+unverified finding is how a hardening tool breaks a working machine. Controls
+with no safe unattended fix are reported as `[SKIP]` with a reason rather than
+quietly dropped, and reboots are flagged, never forced. Every action is appended
+to `reports/remediation.log` — in a real environment that log line carries a
+change ticket ID.
+
+**Remediation uses a different identity than scanning.** The scanner account is
+read-only by design, so it cannot apply fixes — `WINRM_ADMIN_USER` /
+`WINRM_ADMIN_PASS` on Windows and `REMEDIATE_SSH_USER` / `REMEDIATE_SSH_KEY` on
+Linux are required for `--apply`. If the scanning identity could also change the
+system, the least-privilege claim would be decorative.
+
+| | Windows | Linux |
+|---|---|---|
+| Backend | Python functions over the existing WinRM session | `ansible-playbook`, one invocation |
+| Dry run | prints the exact command per control | Ansible's own `--check` |
+| Scoping | per-control fix catalog | playbook tags, one per control |
+
+Linux runs through Ansible because idempotency, check-mode and safe config-file
+editing are already solved there — the playbook validates `sshd_config` with
+`sshd -t` before reloading. Python keeps detection and reporting.
+
+## Scan history and dashboard
+
+Every scan is stored in SQLite (`reports/scans.db`) through parameterized
+queries. A re-scan of the same target automatically prints the delta:
+
+```
+[*] compared to previous scan (20260814_023731):
+    score: 56% -> 100%  (+44)
+    WIN-18.3.3       SMBv1 disabled            FAIL -> PASS
+    WIN-18.9.10      BitLocker on OS volume    FAIL -> FAIL  (unchanged)
+```
+
+Regressions are listed first and labelled, and a score that moved because
+*coverage* moved is called out rather than presented as a real gain.
+
+```bash
+export DASHBOARD_USER=admin DASHBOARD_PASS=...
+python dashboard.py                 # https://127.0.0.1:8443, self-signed
+python dashboard.py --cert c.pem --key k.pem
+```
+
+Basic auth over HTTPS (credentials compared with `hmac.compare_digest`), bound to
+localhost by default, no raw SQL, autoescaped templates, and `nosniff` /
+`DENY` / CSP headers. Host names and evidence come off scanned machines, so the
+escaping is load-bearing — there's a test asserting a `<script>` host name
+renders inert.
+
 ## Status
 
-Tier 1 complete: scanning, scoring, reporting, IAM, infra.
-Tier 2 in progress: SQLite history, Flask dashboard, Windows remediation in
-Python, Linux remediation via Ansible, before/after delta.
+Tier 1 and Tier 2 complete: scanning, scoring, reporting, IAM, infra, SQLite
+history, before/after delta, Windows and Linux remediation, dashboard.
+Tier 3 (roadmap): CI with lint + Bandit, AWS SSM as a connection backend,
+Windows remediation via `ansible.windows`, suppression/waiver file.
