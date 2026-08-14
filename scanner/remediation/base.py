@@ -57,6 +57,10 @@ def build_plan(
     for r in results:
         if r.status is not Status.FAIL:
             continue
+        if r.waived:
+            # someone accepted this risk on the record; silently "fixing" it
+            # would overrule that decision
+            continue
         fix = catalog.get(r.check.id)
         if fix is None:
             continue
