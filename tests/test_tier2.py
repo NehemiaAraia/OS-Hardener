@@ -19,7 +19,8 @@ from scanner.storage import Store  # noqa: E402
 
 def scan_of(platform, scenario):
     conn = make_connection("fixture", scenario=f"{platform}/{scenario}")
-    return run_scan(platform, conn, ROOT / "rules")
+    results, summary, _ = run_scan(platform, conn, ROOT / "rules")
+    return results, summary
 
 
 def store_scan(store, platform, scenario, host="10.0.0.5", ts="20260101_000000"):

@@ -21,7 +21,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("DASHBOARD_PASS", "correct-horse")
     db = tmp_path / "scans.db"
     conn = make_connection("fixture", scenario="linux/baseline")
-    results, summary = run_scan("linux", conn, ROOT / "rules")
+    results, summary, _ = run_scan("linux", conn, ROOT / "rules")
     with Store(db) as store:
         store.save_scan(results, summary,
                         {"platform": "linux", "host": "10.0.0.9", "timestamp": "20260101_000000"})
@@ -74,7 +74,7 @@ def test_host_field_is_escaped(tmp_path, monkeypatch):
     monkeypatch.setenv("DASHBOARD_PASS", "correct-horse")
     db = tmp_path / "x.db"
     conn = make_connection("fixture", scenario="linux/baseline")
-    results, summary = run_scan("linux", conn, ROOT / "rules")
+    results, summary, _ = run_scan("linux", conn, ROOT / "rules")
     with Store(db) as store:
         store.save_scan(results, summary, {
             "platform": "linux",

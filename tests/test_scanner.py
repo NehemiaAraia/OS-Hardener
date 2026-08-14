@@ -18,7 +18,7 @@ from scanner.scanner import run_scan  # noqa: E402
 
 def scan(platform, scenario):
     conn = make_connection("fixture", scenario=f"{platform}/{scenario}")
-    results, summary = run_scan(platform, conn, ROOT / "rules")
+    results, summary, _ = run_scan(platform, conn, ROOT / "rules")
     return {r.check.id: r for r in results}, summary
 
 
