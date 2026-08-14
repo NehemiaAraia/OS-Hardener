@@ -185,14 +185,24 @@ python dashboard.py            # https://127.0.0.1:8443
 - [ ] `reports/` cleared of noise from debugging
 - [ ] Terminal font large enough to read when shared small
 
-**Resetting the Linux baseline** (so remediation has something to fix):
+**Resetting to a failing baseline** (so remediation has something to fix). These
+scripts deliberately weaken the host and refuse to run without an explicit
+acknowledgement plus a hostname confirmation — they are for disposable lab
+instances only:
+
 ```bash
-sudo sed -i 's/^PermitRootLogin no/PermitRootLogin yes/' /etc/ssh/sshd_config
-sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
-sudo systemctl reload sshd && sudo systemctl stop firewalld
+sudo I_UNDERSTAND_THIS_WEAKENS_THIS_HOST=yes ./scripts/lab_reset_linux.sh
 ```
-Re-enabling password auth means your key login still works but the control fails
-again. Do not do this on anything but a throwaway lab host.
+```powershell
+.\lab_reset_windows.ps1 -IUnderstandThisWeakensThisHost
+```
+
+The Linux script leaves password authentication **on** so your key login keeps
+working while the control fails again, and the Windows script leaves the
+firewall **enabled** — turning it off on an instance you reach over the network
+is how you lose access mid-demo.
+
+The full shot-by-shot recording script is in [DEMO.md](DEMO.md).
 
 ---
 
