@@ -231,6 +231,37 @@ Linux runs through Ansible because idempotency, check-mode and safe config-file
 editing are already solved there — the playbook validates `sshd_config` with
 `sshd -t` before reloading. Python keeps detection and reporting.
 
+## Waivers (documented risk acceptance)
+
+Without a way to record "known, accepted, not fixing," a compliance tool produces
+alert fatigue — the same finding shouts every run until people stop reading the
+output. `exceptions.yml` records those decisions:
+
+```yaml
+waivers:
+  - check_id: WIN-18.9.10
+    reason: no unattended fix on a running instance; EBS encryption compensates
+    owner: a.araia
+    ticket: CHG-1042
+    expires: 2026-10-31
+```
+
+Four rules keep this from becoming a way to hide problems:
+
+- **Expiry is mandatory.** A waiver with no end date is how an accepted risk
+  becomes a forgotten one. Entries without a valid `expires` are rejected and
+  reported, not silently ignored. When one expires the finding comes back and the
+  scan says so by name.
+- **Only a FAIL can be waived.** Waiving a WARN would mean accepting a risk
+  nobody measured — the control was never verified, so there is nothing to
+  accept. Attempts are reported.
+- **A waived finding is still reported.** It leaves the score's denominator and
+  is counted separately; it never disappears from the output.
+- **Waived controls are never remediated**, since silently fixing an accepted
+  risk overrules a documented decision.
+
+Waivers naming controls that no longer exist are flagged as stale.
+
 ## Scan history and dashboard
 
 Every scan is stored in SQLite (`reports/scans.db`) through parameterized
