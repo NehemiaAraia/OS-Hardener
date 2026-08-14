@@ -2,8 +2,15 @@
 over the connection, and hand back the raw output. No pass/fail logic lives here."""
 from __future__ import annotations
 
+import shlex
+
 from .connection.base import CommandOutput, Connection
 from .model import SubRule
+
+
+def _ps_quote(value: str) -> str:
+    """PowerShell single-quoted literal; an embedded quote is doubled."""
+    return "'" + value.replace("'", "''") + "'"
 
 
 def probe_command(sub: SubRule, platform: str) -> str:
@@ -12,20 +19,22 @@ def probe_command(sub: SubRule, platform: str) -> str:
     t = sub.type
     if t == "cmd":
         return sub.target
+    # targets come from rule files, which are trusted like code — but quoting them
+    # properly costs nothing and keeps a typo'd rule from becoming a shell escape
     if platform == "windows":
         if t == "r":
             path = sub.target.replace("HKLM\\", "HKLM:\\").replace("HKCU\\", "HKCU:\\")
-            return f"Get-ItemPropertyValue -Path '{path}' -Name '{sub.name}'"
+            return f"Get-ItemPropertyValue -Path {_ps_quote(path)} -Name {_ps_quote(sub.name or '')}"
         if t == "svc":
             # SilentlyContinue so an absent service returns empty rather than erroring
-            return f"(Get-Service -Name '{sub.target}' -ErrorAction SilentlyContinue).Status"
+            return f"(Get-Service -Name {_ps_quote(sub.target)} -ErrorAction SilentlyContinue).Status"
     else:  # linux
         if t == "f":
-            return f"cat '{sub.target}' 2>/dev/null"
+            return f"cat {shlex.quote(sub.target)} 2>/dev/null"
         if t == "svc":
-            return f"systemctl is-active '{sub.target}'"
+            return f"systemctl is-active {shlex.quote(sub.target)}"
         if t == "perm":
-            return f"stat -c '%a' '{sub.target}'"
+            return f"stat -c '%a' {shlex.quote(sub.target)}"
     raise ValueError(f"sub-rule type {t!r} not supported on platform {platform!r}: {sub.raw}")
 
 

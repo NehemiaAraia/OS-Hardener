@@ -11,6 +11,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from ..validate import check_host
 from .base import Fix
 
 PLAYBOOK = "playbooks/linux_remediate.yml"
@@ -42,6 +43,10 @@ def run_playbook(host, user, key, tags, check, playbook=PLAYBOOK, stream=True):
     # which is a worse outcome than any missing-dependency error
     if not tags:
         return False, "no tags to run"
+    try:
+        check_host(host)
+    except ValueError as e:
+        return False, str(e)
     if shutil.which("ansible-playbook") is None:
         return False, "ansible-playbook not found on PATH"
     if not Path(playbook).exists():
@@ -60,7 +65,9 @@ def run_playbook(host, user, key, tags, check, playbook=PLAYBOOK, stream=True):
         cmd.append("--check")
 
     try:
-        proc = subprocess.run(cmd, capture_output=not stream, text=True, timeout=600)
+        # argument list, never shell=True; host is validated above and tags are
+        # rule-file check IDs
+        proc = subprocess.run(cmd, capture_output=not stream, text=True, timeout=600)  # nosec B603
     except subprocess.TimeoutExpired:
         return False, "ansible-playbook timed out after 600s"
 

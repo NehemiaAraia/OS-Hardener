@@ -22,6 +22,7 @@ from scanner.remediation import windows as win_remediation
 from scanner.reporter import build_document, write_html, write_json
 from scanner.scanner import run_scan
 from scanner.storage import DEFAULT_DB, Store
+from scanner.validate import check_host
 
 RULES_DIR = os.environ.get("HARDENING_RULES_DIR", "rules")
 REPORTS_DIR = os.environ.get("HARDENING_REPORTS_DIR", "reports")
@@ -36,6 +37,10 @@ def _open_connection(target: str, args):
         return make_connection("fixture", scenario=args.fixture)
     if not args.host:
         sys.exit("--host is required for a live scan (or use --fixture for offline dev)")
+    try:
+        check_host(args.host)
+    except ValueError as e:
+        sys.exit(str(e))
     if target == "windows":
         user = os.environ.get("WINRM_USER")
         password = os.environ.get("WINRM_PASS")
