@@ -1,0 +1,47 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]" ruff
+
+      - name: Lint
+        run: ruff check .
+
+      - name: SAST
+        run: bandit -c pyproject.toml -r scanner/ main.py dashboard.py
+
+      - name: Tests
+        run: pytest -q
+
+      # the fixtures are generated from the rule files; if they drift, the suite
+      # is asserting against recorded output the scanner would never produce
+      - name: Fixtures match the rules
+        run: |
+          python tests/gen_fixtures.py
+          git diff --exit-code tests/fixtures/
+
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
