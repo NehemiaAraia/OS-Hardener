@@ -18,5 +18,7 @@ reports/*.json
 terraform.tfvars
 *.pem
 
-# scan history db
+# scan history db and the remediation audit trail — both are runtime state, and
+# a committed audit log reads as real remediation history that never happened
 reports/*.db
+reports/*.log
