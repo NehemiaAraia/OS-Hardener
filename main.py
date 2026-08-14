@@ -14,9 +14,14 @@ import os
 import sys
 from datetime import datetime, timezone
 
+from scanner import delta as delta_mod
+from scanner import remediation
 from scanner.connection import make_connection
+from scanner.remediation import linux as linux_remediation
+from scanner.remediation import windows as win_remediation
 from scanner.reporter import build_document, write_html, write_json
 from scanner.scanner import run_scan
+from scanner.storage import DEFAULT_DB, Store
 
 RULES_DIR = os.environ.get("HARDENING_RULES_DIR", "rules")
 REPORTS_DIR = os.environ.get("HARDENING_REPORTS_DIR", "reports")
@@ -52,8 +57,12 @@ def _open_connection(target: str, args):
 
 def cmd_scan(args) -> int:
     target = args.target
-    host = args.host or ("fixture:" + args.fixture if args.fixture else "unknown")
-    print(f"[*] connecting to {target} target ({host})...")
+    # the host identifies the target across scans, so it must not encode which
+    # fixture was replayed — otherwise before/after look like two different hosts
+    # and the delta never fires
+    host = args.host or "fixture"
+    label = f"{host} ({args.fixture})" if args.fixture else host
+    print(f"[*] connecting to {target} target ({label})...")
     conn = _open_connection(target, args)
     try:
         results, summary = run_scan(target, conn, RULES_DIR)
@@ -84,23 +93,152 @@ def cmd_scan(args) -> int:
             f"could not be verified; the score above is computed only from those that were"
         )
 
-    ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    meta = {"platform": target, "host": host, "timestamp": ts}
+    now = datetime.now(timezone.utc)
+    ts = now.strftime("%Y%m%d_%H%M%S")
+    # milliseconds in the filename only: two scans in the same second during a
+    # before/after demo would otherwise overwrite the first report
+    file_ts = f"{ts}_{now.microsecond // 1000:03d}"
+    meta = {"platform": target, "host": host, "timestamp": ts, "scenario": args.fixture or ""}
     doc = build_document(results, summary, meta)
     os.makedirs(REPORTS_DIR, exist_ok=True)
-    json_path = write_json(doc, f"{REPORTS_DIR}/{target}_{ts}.json")
-    html_path = write_html(doc, f"{REPORTS_DIR}/{target}_{ts}.html")
+    json_path = write_json(doc, f"{REPORTS_DIR}/{target}_{file_ts}.json")
+    html_path = write_html(doc, f"{REPORTS_DIR}/{target}_{file_ts}.html")
     print(f"[*] report: {html_path}")
     print(f"[*] json:   {json_path}")
+
+    with Store(args.db) as store:
+        scan_id = store.save_scan(results, summary, meta)
+        d = delta_mod.compute(store, scan_id, target, host)
+    if d:
+        _print_delta(d)
     return 0
 
 
+def _print_delta(d) -> None:
+    sign = "+" if d.score_change >= 0 else ""
+    print(f"\n[*] compared to previous scan ({d.previous_timestamp}):")
+    print(f"    score: {d.score_before}% -> {d.score_after}%  ({sign}{d.score_change})")
+
+    if d.coverage_changed:
+        print(
+            f"    [!] coverage also moved {d.coverage_before}% -> {d.coverage_after}%, "
+            f"so this is not a like-for-like comparison"
+        )
+
+    for c in d.changes:
+        marker = "REGRESSED" if c.regressed else ""
+        print(f"    {c.check_id:<16} {c.title[:38]:<38} {c.before} -> {c.after}  {marker}")
+    for c in d.unchanged_failures:
+        print(f"    {c.check_id:<16} {c.title[:38]:<38} {c.before} -> {c.after}  (unchanged)")
+
+
+def _remediation_credentials(target: str):
+    """Remediation deliberately uses a different identity than scanning. The
+    scanner account is read-only by design, so if it could apply these fixes the
+    least-privilege claim would be theatre."""
+    if target == "windows":
+        user = os.environ.get("WINRM_ADMIN_USER")
+        secret = os.environ.get("WINRM_ADMIN_PASS")
+        names = "WINRM_ADMIN_USER and WINRM_ADMIN_PASS"
+    else:
+        user = os.environ.get("REMEDIATE_SSH_USER")
+        secret = os.environ.get("REMEDIATE_SSH_KEY")
+        names = "REMEDIATE_SSH_USER and REMEDIATE_SSH_KEY"
+    if not user or not secret:
+        sys.exit(
+            f"set {names} for remediation — the read-only scanner account cannot "
+            f"apply changes, which is intentional"
+        )
+    return user, secret
+
+
 def cmd_remediate(args) -> int:
-    # exits non-zero on purpose: reporting success for work that didn't happen is
-    # the same class of lie as passing a control that wasn't verified
-    print("[!] remediation is not implemented yet (Tier 2).", file=sys.stderr)
-    print("    planned: Python backend for Windows, Ansible playbook for Linux.", file=sys.stderr)
-    return 2
+    target, host = args.target, args.host
+    apply = args.apply
+    if not apply and not args.dry_run:
+        print("[*] no mode given, defaulting to --dry-run")
+
+    # remediate only what a scan just found failing, rather than blanket-applying
+    print(f"[*] scanning {target} target to find failing controls...")
+    conn = _open_connection(target, args)
+    try:
+        results, summary = run_scan(target, conn, RULES_DIR)
+        catalog = win_remediation.CATALOG if target == "windows" else linux_remediation.CATALOG
+        plan = remediation.build_plan(results, catalog, target, host or "fixture")
+
+        if not plan.actionable and not plan.skipped:
+            print("[*] nothing to remediate — no failing controls have a defined fix")
+            return 0
+
+        if apply:
+            _remediation_credentials(target)
+            if not remediation.confirm(plan.host, len(plan.fixes)):
+                print("[*] aborted, no changes made")
+                return 1
+        else:
+            print("[*] dry-run mode, no changes will be made")
+
+        if target == "linux":
+            outcomes = _remediate_linux(plan, args, apply)
+        else:
+            runner = win_remediation.make_runner(conn)
+            outcomes = remediation.execute(plan, runner, apply)
+    finally:
+        conn.close()
+
+    return _report_outcomes(outcomes, apply)
+
+
+def _remediate_linux(plan, args, apply):
+    """Linux runs one ansible-playbook invocation for the whole plan; --dry-run
+    maps to Ansible's own --check rather than a Python imitation of it."""
+    tags = [f.check_id for f in plan.fixes]
+    outcomes = [
+        remediation.FixOutcome(f, "SKIP", f.reason_no_fix) for f in plan.skipped
+    ]
+    if not tags:
+        return outcomes
+
+    user, key = (
+        _remediation_credentials("linux") if apply else ("<unset>", "<unset>")
+    )
+    if not apply:
+        print(f"[*] would run: ansible-playbook {linux_remediation.PLAYBOOK} --check "
+              f"--tags {','.join(sorted(tags))}")
+        return outcomes + [remediation.FixOutcome(f, "DRY-RUN", f.command or "") for f in plan.fixes]
+
+    print(f"[*] invoking ansible-playbook ({linux_remediation.PLAYBOOK})...\n")
+    ok, detail = linux_remediation.run_playbook(plan.host, user, key, tags, check=False)
+    action = "APPLY" if ok else "FAIL"
+    return outcomes + [remediation.FixOutcome(f, action, detail if not ok else "done") for f in plan.fixes]
+
+
+def _report_outcomes(outcomes, apply) -> int:
+    reboot = False
+    applied = failed = 0
+    for o in outcomes:
+        if o.action == "SKIP":
+            print(f"[SKIP]    {o.fix.check_id:<14} {o.fix.title} — {o.detail}")
+        elif o.action == "DRY-RUN":
+            print(f"[DRY-RUN] {o.fix.check_id:<14} {o.fix.title}")
+            print(f"    would run: {o.detail}")
+        elif o.action == "APPLY":
+            print(f"[APPLY]   {o.fix.check_id:<14} {o.fix.title} .......... {o.detail}")
+            applied += 1
+            reboot = reboot or o.fix.requires_reboot
+        else:
+            print(f"[FAIL]    {o.fix.check_id:<14} {o.fix.title} — {o.detail}")
+            failed += 1
+
+    if apply:
+        print(f"\n[*] {applied} control(s) remediated, {failed} failed.")
+        if reboot:
+            print("[*] reboot flagged, not forced.")
+        print("[*] re-run 'scan' to verify the fixes and see the delta.")
+    else:
+        print("\n[*] dry-run complete, nothing was changed.")
+    # a failed fix is a non-zero exit: the caller should not treat this as success
+    return 1 if failed else 0
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -116,14 +254,17 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="skip TLS certificate validation (lab self-signed certs only)",
     )
+    s.add_argument("--db", default=DEFAULT_DB, help="scan history database")
     s.set_defaults(func=cmd_scan)
 
-    r = sub.add_parser("remediate", help="remediate failed controls (Tier 2)")
+    r = sub.add_parser("remediate", help="remediate controls a scan found failing")
     r.add_argument("--target", required=True, choices=["windows", "linux"])
     r.add_argument("--host")
+    r.add_argument("--fixture", help="dev/CI only: replay a recorded fixture scenario")
+    r.add_argument("--insecure", action="store_true", help=argparse.SUPPRESS)
     g = r.add_mutually_exclusive_group()
-    g.add_argument("--dry-run", action="store_true")
-    g.add_argument("--apply", action="store_true")
+    g.add_argument("--dry-run", action="store_true", help="show what would change (default)")
+    g.add_argument("--apply", action="store_true", help="make live changes, after confirmation")
     r.set_defaults(func=cmd_remediate)
     return p
 

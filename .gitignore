@@ -17,3 +17,6 @@ reports/*.json
 *.tfstate.*
 terraform.tfvars
 *.pem
+
+# scan history db
+reports/*.db

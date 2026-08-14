@@ -8,6 +8,8 @@ dependencies = [
     "jinja2>=3.1",
     "pywinrm>=0.4",
     "paramiko>=3.0",
+    "flask>=3.0",
+    "cryptography>=41.0",
 ]
 
 [project.optional-dependencies]
