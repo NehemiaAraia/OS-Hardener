@@ -1,4 +1,4 @@
-from .base import Connection, CommandOutput
+from .base import CommandOutput, Connection
 from .fixture import FixtureConnection
 
 __all__ = ["Connection", "CommandOutput", "FixtureConnection", "make_connection"]

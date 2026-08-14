@@ -47,7 +47,9 @@ class RemediationPlan:
         return bool(self.fixes)
 
 
-def build_plan(results: list[CheckResult], catalog: dict[str, Fix], target: str, host: str) -> RemediationPlan:
+def build_plan(
+    results: list[CheckResult], catalog: dict[str, Fix], target: str, host: str
+) -> RemediationPlan:
     """Only FAILing controls are remediated. WARN means the control was never
     verified, and acting on an unverified finding is how a hardening tool breaks
     a production box."""

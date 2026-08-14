@@ -26,7 +26,10 @@ class SSHConnection(Connection):
 
     def run(self, command: str) -> CommandOutput:
         try:
-            _, stdout, _ = self._client.exec_command(command, timeout=self._timeout)
+            # commands come from rule files (trusted like code) and are
+            # shell-quoted in executor.py; scanned-host output is never
+            # interpolated back into a command
+            _, stdout, _ = self._client.exec_command(command, timeout=self._timeout)  # nosec B601
             # drain the channel before waiting on the exit status — the remote
             # side blocks once it fills the window, and 'find /' will fill it
             out = stdout.read().decode("utf-8", "replace")
@@ -38,5 +41,6 @@ class SSHConnection(Connection):
     def close(self) -> None:
         try:
             self._client.close()
-        except Exception:
+        # best-effort close, nothing to recover from here
+        except Exception:  # nosec B110  # noqa: S110
             pass

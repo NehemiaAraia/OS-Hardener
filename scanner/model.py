@@ -7,7 +7,8 @@ from typing import Optional
 
 
 class Status(str, Enum):
-    PASS = "PASS"
+    # a compliance status, not a credential
+    PASS = "PASS"  # nosec B105  # noqa: S105
     FAIL = "FAIL"
     WARN = "WARN"
 

@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from .model import Check, Policy, SubRule, SUBRULE_TYPES
+from .model import SUBRULE_TYPES, Check, Policy, SubRule
 
 
 def parse_subrule(raw: str) -> SubRule:
