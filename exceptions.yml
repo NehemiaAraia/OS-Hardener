@@ -1,0 +1,23 @@
+# Documented risk acceptances. A waived control still appears in every report —
+# it is removed from the compliance score, never from the output.
+#
+# Required on every entry: check_id, reason, owner, expires (YYYY-MM-DD).
+# An entry missing any of these is rejected and reported, not silently ignored.
+#
+# Expiry is not optional by design: a waiver with no end date is how an accepted
+# risk turns into a forgotten one. When a waiver expires the finding simply comes
+# back, and the scan says so.
+#
+# Only a FAIL can be waived. A WARN means the control was never verified, and
+# accepting a risk nobody has measured is not risk acceptance.
+
+waivers:
+  - check_id: WIN-18.9.10
+    reason: >
+      BitLocker cannot be enabled unattended on a running cloud instance without
+      an interactive TPM/recovery-key decision. Deferred to the next maintenance
+      window; EBS volume encryption at rest is in place as a compensating control.
+    owner: a.araia
+    ticket: CHG-1042
+    expires: 2026-10-31
+    hosts: ["*"]

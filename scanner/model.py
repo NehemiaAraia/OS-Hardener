@@ -64,13 +64,30 @@ class CheckResult:
     status: Status
     message: str
     evidence: list[Evidence] = field(default_factory=list)
+    waiver: Optional["object"] = None  # scanner.waivers.Waiver when risk-accepted
+
+    @property
+    def waived(self) -> bool:
+        return self.waiver is not None
 
     def to_dict(self) -> dict:
         c = self.check
+        w = self.waiver
         return {
             "id": c.id,
             "title": c.title,
             "status": self.status.value,
+            "waived": self.waived,
+            "waiver": (
+                {
+                    "reason": w.reason,
+                    "owner": w.owner,
+                    "ticket": w.ticket,
+                    "expires": w.expires.isoformat(),
+                }
+                if w
+                else None
+            ),
             "severity": c.severity,
             "level": c.level,
             "scored": c.scored,

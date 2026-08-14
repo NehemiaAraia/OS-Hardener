@@ -13,7 +13,10 @@ def summarize(results: list[CheckResult]) -> dict:
     for r in results:
         counts[r.status.value] += 1
 
-    defined = [r for r in results if r.check.scored == "scored"]
+    waived = [r for r in results if r.waived]
+    # a waived finding is accepted risk, so it leaves the denominator — but it is
+    # counted and displayed, never dropped
+    defined = [r for r in results if r.check.scored == "scored" and not r.waived]
     scored = [r for r in defined if r.status in (Status.PASS, Status.FAIL)]
     denom = len(scored)
     passed = sum(1 for r in scored if r.status is Status.PASS)
@@ -28,6 +31,7 @@ def summarize(results: list[CheckResult]) -> dict:
         "pass": counts["PASS"],
         "fail": counts["FAIL"],
         "warn": counts["WARN"],
+        "waived": len(waived),
         "scored_defined": len(defined),
         "scored_total": denom,
         "scored_pass": passed,
