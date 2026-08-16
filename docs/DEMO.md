@@ -9,7 +9,7 @@ changed. Everything else exists to set that up, so don't spend time elsewhere.
 
 ## Before you hit record
 
-- [ ] Both instances running; RDP and SSH already connected
+- [ ] Instance running; SSH already connected
 - [ ] Both hosts reset to a failing baseline (`scripts/lab_reset_*.sh`)
 - [ ] One full unrecorded practice run
 - [ ] `reports/` cleared of debugging noise
@@ -45,7 +45,7 @@ python main.py scan --target linux --host <linux-ip>
 Let the control list stream. While it runs:
 
 > "It's connecting over SSH as a dedicated service account — not root. That
-> account's sudo access is three fixed read-only commands, so the scanner can't
+> account's sudo access is four fixed read-only commands, so the scanner can't
 > change anything it's looking at."
 
 When the summary lands:
