@@ -50,7 +50,7 @@ Let the control list stream. While it runs:
 
 When the summary lands:
 
-> "Thirty percent. Ten of eleven scored controls verified — the one it couldn't
+> "Eighteen percent. Nine failures, and all eleven scored controls verified — the one it couldn't
 > verify is reported as WARN, not passed. That's deliberate: this tool never
 > defaults to PASS on something it couldn't check."
 
@@ -82,6 +82,12 @@ If a waiver is in play, expand it:
 ```bash
 python main.py remediate --target linux --host <linux-ip> --dry-run
 ```
+
+Point at the `[NO FIX]` line above the fixes:
+
+> "Nine controls failed but it only plans eight. The ninth would mean stripping
+> passwordless sudo from the admin account — that's how hardening scripts lock
+> people out of production, so it reports it instead of guessing."
 
 > "Dry run is the default. It rescans first, so it only acts on what's actually
 > failing right now — and never on a WARN, because acting on a control you
@@ -117,7 +123,7 @@ python main.py scan --target linux --host <linux-ip>
 
 Say nothing until the delta block renders. Let it land.
 
-> "Thirty to a hundred. And it's not just a number — it lists every control that
+> "Eighteen to ninety-one. And it's not just a number — it lists every control that
 > moved, by ID. Anything that regressed would show up here too, flagged."
 
 Point at any `(unchanged)` line:
