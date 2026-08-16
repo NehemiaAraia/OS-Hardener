@@ -43,6 +43,11 @@ if [[ "$answer" != "$(hostname)" ]]; then
     exit 1
 fi
 
+# --fixable-only reverts just the controls remediation can repair, so a demo
+# ends cleanly instead of trailing failures the tool was never going to fix
+FIXABLE_ONLY=0
+[[ "${2:-}" == "--fixable-only" || "${1:-}" == "--fixable-only" ]] && FIXABLE_ONLY=1
+
 echo "[*] reverting SSH hardening..."
 # password auth stays ON so key login still works and the control fails again
 sed -i 's/^\s*PermitRootLogin.*/PermitRootLogin yes/'          /etc/ssh/sshd_config
@@ -54,15 +59,19 @@ sshd -t && systemctl reload sshd
 echo "[*] stopping the firewall..."
 systemctl disable --now firewalld 2>/dev/null || true
 
-echo "[*] creating a world-writable file..."
-install -d -m 0755 /opt/lab
-touch /opt/lab/scratch.sh && chmod 0666 /opt/lab/scratch.sh
+if [[ $FIXABLE_ONLY -eq 0 ]]; then
+    echo "[*] creating a world-writable file..."
+    install -d -m 0755 /opt/lab
+    touch /opt/lab/scratch.sh && chmod 0666 /opt/lab/scratch.sh
 
-echo "[*] stopping rsyslog..."
-systemctl disable --now rsyslog 2>/dev/null || true
+    echo "[*] stopping rsyslog..."
+    systemctl disable --now rsyslog 2>/dev/null || true
 
-echo "[*] clearing the password policy..."
-sed -i '/^\s*minlen/d' /etc/security/pwquality.conf 2>/dev/null || true
+    echo "[*] clearing the password policy..."
+    sed -i '/^\s*minlen/d' /etc/security/pwquality.conf 2>/dev/null || true
+else
+    echo "[*] --fixable-only: leaving rsyslog, file permissions and password policy alone"
+fi
 
 cat <<'EOF'
 
