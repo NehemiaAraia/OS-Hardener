@@ -28,6 +28,13 @@ def _match(matcher: str, out: CommandOutput) -> Optional[bool]:
     text = out.stdout.strip()
     ran_clean = out.exit_status == 0
 
+    # a probe that failed and produced nothing told us nothing — most often a
+    # file the scanner account cannot read. Reporting that as FAIL invents a
+    # violation, which is the same lie as a false PASS pointed the other way.
+    # (a non-zero exit *with* output is still meaningful: `grep -c` prints 0.)
+    if not ran_clean and not text:
+        return None
+
     if kind in ("equals", "eq"):
         return ran_clean and text == arg
     if kind in ("regex", "match"):
