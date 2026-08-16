@@ -18,7 +18,17 @@ python3 --version                    # 3.11+
 ```
 
 An EC2 key pair must already exist in the target region — Terraform references it
-by name, it does not create one.
+by name, it does not create one:
+
+```bash
+ssh-keygen -t ed25519 -C "hardening-lab" -f ~/.ssh/hardening_lab -N ""
+aws ec2 import-key-pair --key-name hardening-lab \
+  --public-key-material fileb://$HOME/.ssh/hardening_lab.pub
+```
+
+`curl -4` is not optional in the next step. On an IPv6-capable connection a plain
+`curl ifconfig.me` returns an IPv6 address, which `cidr_blocks` rejects — the
+apply fails on an invalid CIDR.
 
 ---
 
@@ -27,7 +37,7 @@ by name, it does not create one.
 ```bash
 terraform init
 terraform apply \
-  -var="my_ip=$(curl -s ifconfig.me)/32" \
+  -var="my_ip=$(curl -4 -s ifconfig.me)/32" \
   -var="key_name=<your-keypair>"
 ```
 
@@ -70,9 +80,9 @@ RDP in as `Administrator` (decrypt the password with your key pair), copy
 ## 3. Bootstrap the Linux host
 
 ```bash
-scp -i <key>.pem scripts/bootstrap_linux.sh scripts/hardening_scan_helper.sh ec2-user@<linux-ip>:~
-ssh -i <key>.pem ec2-user@<linux-ip>
-sudo ./bootstrap_linux.sh "$(cat ~/.ssh/id_ed25519.pub)"
+scp -i ~/.ssh/hardening_lab scripts/bootstrap_linux.sh scripts/hardening_scan_helper.sh ec2-user@<linux-ip>:~
+ssh -i ~/.ssh/hardening_lab ec2-user@<linux-ip>
+sudo ./bootstrap_linux.sh "$(cat ~/.ssh/hardening_lab.pub)"
 ```
 
 Both scripts must be copied — the bootstrap installs the helper from its own
@@ -94,7 +104,7 @@ is wrong.
 ## 4. First live scan — the real milestone
 
 ```bash
-export SSH_USER=svc-hardening-scanner SSH_KEY=~/.ssh/id_ed25519
+export SSH_USER=svc-hardening-scanner SSH_KEY=~/.ssh/hardening_lab
 python main.py scan --target linux --host <linux-ip>
 
 export WINRM_USER=svc-hardening-scanner WINRM_PASS='<from step 2>'
@@ -142,7 +152,7 @@ Then apply. This needs **different credentials than scanning** — the scanner
 account is read-only by design and cannot make changes:
 
 ```bash
-export REMEDIATE_SSH_USER=ec2-user REMEDIATE_SSH_KEY=<key>.pem
+export REMEDIATE_SSH_USER=ec2-user REMEDIATE_SSH_KEY=~/.ssh/hardening_lab
 python main.py remediate --target linux --host <linux-ip> --apply
 
 export WINRM_ADMIN_USER=Administrator WINRM_ADMIN_PASS='<admin password>'

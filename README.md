@@ -135,7 +135,7 @@ Two EC2 instances in a security group locked to a single operator IP.
 
 ```bash
 terraform init
-terraform apply -var="my_ip=$(curl -s ifconfig.me)/32" -var="key_name=<your-keypair>"
+terraform apply -var="my_ip=$(curl -4 -s ifconfig.me)/32" -var="key_name=<your-keypair>"
 ```
 
 AMIs are looked up dynamically by name pattern rather than pinned to IDs, which
