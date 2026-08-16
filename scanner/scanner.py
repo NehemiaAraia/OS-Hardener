@@ -11,11 +11,27 @@ from .parser import load_policies
 from .scoring import summarize
 
 
-def apply_waivers(results, waiver_list, host, today):
+def all_check_ids(rules_dir) -> set:
+    """Check IDs across every platform, not just the one being scanned — a
+    Windows waiver is not stale merely because this run targeted Linux."""
+    ids = set()
+    base = Path(rules_dir)
+    for platform_dir in base.iterdir() if base.exists() else []:
+        if not platform_dir.is_dir():
+            continue
+        try:
+            for pol in load_policies(base, platform_dir.name):
+                ids.update(c.id for c in pol.checks)
+        except FileNotFoundError:
+            continue
+    return ids
+
+
+def apply_waivers(results, waiver_list, host, today, known_ids=None):
     """Attach risk acceptances to failing controls, and report anything the
     waiver file says that no longer lines up with reality."""
     notes = []
-    known = {r.check.id for r in results}
+    known = known_ids if known_ids else {r.check.id for r in results}
 
     for r in results:
         if r.status is Status.FAIL:
@@ -63,7 +79,9 @@ def run_scan(
         from datetime import datetime
 
         today = today or datetime.now(timezone.utc).date()
-        notes = apply_waivers(results, waiver_list, host, today)
+        notes = apply_waivers(
+            results, waiver_list, host, today, known_ids=all_check_ids(rules_dir)
+        )
 
     summary = summarize(results)
     return results, summary, notes
