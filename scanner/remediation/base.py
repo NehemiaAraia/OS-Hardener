@@ -41,6 +41,10 @@ class RemediationPlan:
     host: str
     fixes: list[Fix] = field(default_factory=list)
     skipped: list[Fix] = field(default_factory=list)
+    # failing controls with no entry in the catalog at all. Reported explicitly:
+    # dropping them silently would let a 3-FAIL scan produce a 2-item plan with
+    # no explanation, which is a lie by omission.
+    no_fix_defined: list[tuple[str, str]] = field(default_factory=list)
 
     @property
     def actionable(self) -> bool:
@@ -63,6 +67,7 @@ def build_plan(
             continue
         fix = catalog.get(r.check.id)
         if fix is None:
+            plan.no_fix_defined.append((r.check.id, r.check.title))
             continue
         (plan.fixes if fix.command else plan.skipped).append(fix)
     return plan

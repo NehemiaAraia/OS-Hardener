@@ -85,7 +85,8 @@ def cmd_scan(args) -> int:
     print(f"[*] loaded {total} rules from {RULES_DIR}/{target}/\n")
     for i, r in enumerate(results, 1):
         color = _STATUS_COLOR.get(r.status.value, "")
-        dots = "." * max(3, 52 - len(r.check.title))
+        title = _fit(r.check.title, 50)
+        dots = "." * 4
         note = ""
         if r.waived:
             note = f"  (waived until {r.waiver.expires.isoformat()}, {r.waiver.ticket or r.waiver.owner})"
@@ -93,7 +94,7 @@ def cmd_scan(args) -> int:
             note = f"  ({r.check.severity})"
         elif r.status.value == "WARN":
             note = "  (manual review)" if r.check.manual else "  (review)"
-        print(f"[{i}/{total}]  {r.check.id:<16} {r.check.title} {dots} {color}{r.status.value}{_RESET}{note}")
+        print(f"[{i:>2}/{total}]  {r.check.id:<14} {title} {dots} {color}{r.status.value}{_RESET}{note}")
 
     for note in notes:
         print(f"[!] {note}")
@@ -150,9 +151,16 @@ def _print_delta(d) -> None:
 
     for c in d.changes:
         marker = "REGRESSED" if c.regressed else ""
-        print(f"    {c.check_id:<16} {c.title[:38]:<38} {c.before} -> {c.after}  {marker}")
+        print(f"    {c.check_id:<16} {_fit(c.title, 40)} {c.before} -> {c.after}  {marker}".rstrip())
     for c in d.unchanged_failures:
-        print(f"    {c.check_id:<16} {c.title[:38]:<38} {c.before} -> {c.after}  (unchanged)")
+        print(f"    {c.check_id:<16} {_fit(c.title, 40)} {c.before} -> {c.after}  (unchanged)")
+
+
+def _fit(text: str, width: int) -> str:
+    """Pad or ellipsize to a fixed width so the status column stays aligned."""
+    if len(text) <= width:
+        return text.ljust(width)
+    return text[: width - 1] + "…"
 
 
 def _remediation_credentials(target: str):
@@ -193,6 +201,9 @@ def cmd_remediate(args) -> int:
             print(f"[!] {note}")
         catalog = win_remediation.CATALOG if target == "windows" else linux_remediation.CATALOG
         plan = remediation.build_plan(results, catalog, target, host or "fixture")
+
+        for check_id, title in plan.no_fix_defined:
+            print(f"[NO FIX]  {check_id:<14} {title} — failing, no automated fix defined")
 
         if not plan.actionable and not plan.skipped:
             print("[*] nothing to remediate — no failing controls have a defined fix")

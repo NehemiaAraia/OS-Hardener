@@ -248,3 +248,16 @@ def test_probe_commands_quote_their_targets():
 
     win_cmd = probe_command(parse_subrule("svc:it's -> stopped:"), "windows")
     assert "'it''s'" in win_cmd
+
+
+def test_failing_control_with_no_catalog_entry_is_reported():
+    """A 3-FAIL scan producing a 2-item plan with no explanation is a lie by
+    omission — the dropped control must be named."""
+    results, _ = scan_of("linux", "baseline")
+    plan = rem.build_plan(results, rem_linux.CATALOG, "linux", "10.0.0.5")
+    reported = {cid for cid, _ in plan.no_fix_defined}
+    planned = {f.check_id for f in plan.fixes}
+    failing = {r.check.id for r in results if r.status is Status.FAIL}
+    # every failing control is either planned, skipped, or explicitly named
+    assert failing == planned | {f.check_id for f in plan.skipped} | reported
+    assert "LNX-5.3.4" in reported
