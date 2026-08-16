@@ -1,49 +1,51 @@
-"""Windows remediation: PowerShell run in-process over the existing WinRM
-connection. Each fix maps to exactly one control the scanner checks, so a
-re-scan verifies the fix rather than taking its word for it."""
+"""Windows remediation catalog.
+
+Remediation runs through the ansible.windows collection over WinRM, matching
+ansible-lockdown's Windows-2022-CIS approach. Each entry's check_id is the
+playbook tag, so a run is scoped to exactly the controls a scan found failing.
+"""
 from __future__ import annotations
 
 from .base import Fix
 
-# check id -> fix. Controls absent from this catalog are reported but never
-# touched; a fix with command=None is declared unfixable rather than ignored.
+# check id -> fix. Controls absent from this catalog are reported by the CLI as
+# "no automated fix defined" rather than being silently dropped.
 CATALOG = {
     "WIN-18.3.3": Fix(
         check_id="WIN-18.3.3",
         title="SMBv1 disabled",
-        # the control is the LanmanServer registry value, so clear that as well
-        # as removing the feature — disabling the feature alone leaves the value
-        # set and the control still failing on the next scan
-        command=(
-            "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters' "
-            "-Name SMB1 -Value 0 -Type DWord -Force; "
-            "Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart "
-            "-ErrorAction SilentlyContinue | Out-Null"
-        ),
+        command="ansible tag WIN-18.3.3 (win_regedit SMB1=0 + remove SMB1Protocol feature)",
         requires_reboot=True,
     ),
     "WIN-9.1": Fix(
         check_id="WIN-9.1",
         title="Windows Firewall on all profiles",
-        command="Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True",
+        command="ansible tag WIN-9.1 (Set-NetFirewallProfile -Enabled True)",
     ),
     "WIN-1.1.1": Fix(
         check_id="WIN-1.1.1",
         title="Minimum password length (14+)",
-        command="net accounts /minpwlen:14",
+        command="ansible tag WIN-1.1.1 (net accounts /minpwlen:14)",
     ),
     "WIN-17.1": Fix(
         check_id="WIN-17.1",
         title="Audit logging for logon events",
-        command='auditpol /set /subcategory:"Logon" /success:enable /failure:enable',
+        command="ansible tag WIN-17.1 (auditpol /set Logon success+failure)",
     ),
     "WIN-5.1": Fix(
         check_id="WIN-5.1",
         title="Legacy services disabled",
-        command=(
-            "Stop-Service -Name RemoteRegistry -Force -ErrorAction SilentlyContinue; "
-            "Set-Service -Name RemoteRegistry -StartupType Disabled"
-        ),
+        command="ansible tag WIN-5.1 (win_service RemoteRegistry stopped + disabled)",
+    ),
+    "WIN-2.3.1.1": Fix(
+        check_id="WIN-2.3.1.1",
+        title="Guest account disabled",
+        command="ansible tag WIN-2.3.1.1 (win_user Guest account_disabled)",
+    ),
+    "WIN-2.3.7.4": Fix(
+        check_id="WIN-2.3.7.4",
+        title="RDP requires Network Level Authentication",
+        command="ansible tag WIN-2.3.7.4 (win_regedit UserAuthentication=1)",
     ),
     "WIN-18.9.10": Fix(
         check_id="WIN-18.9.10",
@@ -52,16 +54,3 @@ CATALOG = {
         reason_no_fix="no safe auto-fix defined, flagged for manual action",
     ),
 }
-
-
-def make_runner(conn):
-    """Run one fix over the live connection and report whether it took."""
-    def run(fix: Fix) -> tuple[bool, str]:
-        out = conn.run(fix.command)
-        if not out.ok:
-            return False, "connection lost during remediation"
-        if out.exit_status != 0:
-            return False, (out.stdout or "command returned non-zero").strip()[:200]
-        return True, "done"
-
-    return run

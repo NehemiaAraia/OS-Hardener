@@ -18,6 +18,7 @@ from scanner import delta as delta_mod
 from scanner import remediation
 from scanner import waivers as waivers_mod
 from scanner.connection import make_connection
+from scanner.remediation import ansible_runner
 from scanner.remediation import linux as linux_remediation
 from scanner.remediation import windows as win_remediation
 from scanner.reporter import build_document, write_html, write_json
@@ -217,53 +218,40 @@ def cmd_remediate(args) -> int:
         else:
             print("[*] dry-run mode, no changes will be made")
 
-        if target == "linux":
-            outcomes = _remediate_linux(plan, args, apply)
-        elif apply:
-            # a second, privileged connection: the scanning account is read-only
-            # by design, so reusing its session here would fail and would make
-            # the separation of duties decorative rather than real
-            admin_user, admin_pass = _remediation_credentials("windows")
-            admin_conn = make_connection(
-                "winrm", host=host, username=admin_user,
-                password=admin_pass, insecure=args.insecure,
-            )
-            try:
-                outcomes = remediation.execute(
-                    plan, win_remediation.make_runner(admin_conn), apply
-                )
-            finally:
-                admin_conn.close()
-        else:
-            outcomes = remediation.execute(plan, win_remediation.make_runner(conn), apply)
+        outcomes = _remediate(plan, target, args, apply)
     finally:
         conn.close()
 
     return _report_outcomes(outcomes, apply)
 
 
-def _remediate_linux(plan, args, apply):
-    """Linux runs one ansible-playbook invocation for the whole plan; --dry-run
-    maps to Ansible's own --check rather than a Python imitation of it."""
+def _remediate(plan, target, args, apply):
+    """One Ansible invocation per run, for either platform. Only the connection
+    variables differ — dry-run maps to Ansible's own --check rather than a
+    Python imitation of it."""
     tags = [f.check_id for f in plan.fixes]
-    outcomes = [
-        remediation.FixOutcome(f, "SKIP", f.reason_no_fix) for f in plan.skipped
-    ]
+    outcomes = [remediation.FixOutcome(f, "SKIP", f.reason_no_fix) for f in plan.skipped]
     if not tags:
         return outcomes
 
-    user, key = (
-        _remediation_credentials("linux") if apply else ("<unset>", "<unset>")
-    )
+    playbook = ansible_runner.PLAYBOOKS[target]
     if not apply:
-        print(f"[*] would run: ansible-playbook {linux_remediation.PLAYBOOK} --check "
+        print(f"[*] would run: ansible-playbook {playbook} --check "
               f"--tags {','.join(sorted(tags))}")
-        return outcomes + [remediation.FixOutcome(f, "DRY-RUN", f.command or "") for f in plan.fixes]
+        return outcomes + [
+            remediation.FixOutcome(f, "DRY-RUN", f.command or "") for f in plan.fixes
+        ]
 
-    print(f"[*] invoking ansible-playbook ({linux_remediation.PLAYBOOK})...\n")
-    ok, detail = linux_remediation.run_playbook(plan.host, user, key, tags, check=False)
+    # credentials for remediation are deliberately not the scanning account's
+    user, secret = _remediation_credentials(target)
+    print(f"[*] invoking ansible-playbook ({playbook})...\n")
+    ok, detail = ansible_runner.run_playbook(
+        target, plan.host, user, secret, tags, check=False, insecure=args.insecure
+    )
     action = "APPLY" if ok else "FAIL"
-    return outcomes + [remediation.FixOutcome(f, action, detail if not ok else "done") for f in plan.fixes]
+    return outcomes + [
+        remediation.FixOutcome(f, action, "done" if ok else detail) for f in plan.fixes
+    ]
 
 
 def _report_outcomes(outcomes, apply) -> int:

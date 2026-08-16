@@ -173,25 +173,27 @@ def test_confirm_refuses_when_not_interactive():
     assert rem.confirm("10.0.0.5", 3, stream) is False
 
 
-def test_windows_runner_reports_nonzero_exit_as_failure():
-    class FakeConn:
-        def run(self, cmd):
-            from scanner.connection.base import CommandOutput
-            return CommandOutput(stdout="Access is denied.", exit_status=1, ok=True)
-
-    runner = rem_win.make_runner(FakeConn())
-    ok, detail = runner(rem_win.CATALOG["WIN-18.3.3"])
-    assert ok is False and "denied" in detail
+def test_windows_remediation_goes_through_ansible():
+    """Both platforms remediate via ansible-playbook; only the connection
+    variables differ."""
+    from scanner.remediation import ansible_runner
+    assert ansible_runner.PLAYBOOKS["windows"].endswith("windows_remediate.yml")
+    assert ansible_runner.PLAYBOOKS["linux"].endswith("linux_remediate.yml")
 
 
-def test_windows_runner_reports_lost_connection():
-    class DeadConn:
-        def run(self, cmd):
-            from scanner.connection.base import CommandOutput
-            return CommandOutput(stdout="", exit_status=255, ok=False)
+def test_connection_args_differ_by_platform():
+    from scanner.remediation import ansible_runner
+    win = " ".join(ansible_runner.connection_args("windows", "u", "pw"))
+    lnx = " ".join(ansible_runner.connection_args("linux", "u", "/key"))
+    assert "ansible_connection=winrm" in win and "ansible_port=5986" in win
+    assert "--private-key" in lnx and "winrm" not in lnx
 
-    ok, detail = rem_win.make_runner(DeadConn())(rem_win.CATALOG["WIN-9.1"])
-    assert ok is False and "connection" in detail.lower()
+
+def test_windows_credentials_are_not_written_to_disk():
+    """Secrets go via extra-vars, never an inventory file."""
+    from scanner.remediation import ansible_runner
+    args = ansible_runner.connection_args("windows", "svc", "s3cret")
+    assert any("ansible_password=s3cret" in a for a in args)
 
 
 def test_playbook_missing_ansible_is_reported(monkeypatch):

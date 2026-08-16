@@ -1,0 +1,72 @@
+---
+# Windows remediation over WinRM using the ansible.windows collection, mirroring
+# ansible-lockdown's Windows-2022-CIS approach. Tags match control IDs so the
+# CLI can scope a run to exactly the controls a scan found failing.
+#
+# Run through the scanner CLI rather than directly:
+#   python main.py remediate --target windows --host <ip> --dry-run
+#
+# Connection variables are supplied by the CLI, so no credentials live here.
+- name: Windows CIS remediation
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Disable the SMBv1 server
+      # the control is the registry value; the optional feature is removed as
+      # well so the protocol cannot be re-enabled by a service restart
+      ansible.windows.win_regedit:
+        path: HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters
+        name: SMB1
+        data: 0
+        type: dword
+      tags: [WIN-18.3.3, smb]
+
+    - name: Remove the SMB1Protocol feature
+      ansible.windows.win_optional_feature:
+        name: SMB1Protocol
+        state: absent
+      register: smb1_feature
+      failed_when: false
+      tags: [WIN-18.3.3, smb]
+
+    - name: Enforce a minimum password length
+      ansible.windows.win_shell: net accounts /minpwlen:14
+      changed_when: true
+      tags: [WIN-1.1.1, password]
+
+    - name: Enable logon auditing for success and failure
+      ansible.windows.win_shell: >-
+        auditpol /set /subcategory:"Logon" /success:enable /failure:enable
+      changed_when: true
+      tags: [WIN-17.1, audit]
+
+    - name: Disable legacy remote-access services
+      ansible.windows.win_service:
+        name: "{{ item }}"
+        state: stopped
+        start_mode: disabled
+      loop:
+        - RemoteRegistry
+      failed_when: false
+      tags: [WIN-5.1, services]
+
+    - name: Enable the firewall on all profiles
+      ansible.windows.win_shell: >-
+        Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
+      changed_when: true
+      tags: [WIN-9.1, firewall]
+
+    - name: Disable the Guest account
+      ansible.windows.win_user:
+        name: Guest
+        account_disabled: true
+      tags: [WIN-2.3.1.1, accounts]
+
+    - name: Require Network Level Authentication for RDP
+      ansible.windows.win_regedit:
+        path: HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp
+        name: UserAuthentication
+        data: 1
+        type: dword
+      tags: [WIN-2.3.7.4, rdp]
