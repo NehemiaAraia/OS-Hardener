@@ -88,12 +88,30 @@ def confirm(host: str, count: int, stream=None) -> bool:
     non-interactive session declines rather than assuming consent."""
     import sys
 
-    stream = stream or sys.stdin
-    if not stream.isatty():
-        print("[!] refusing to apply changes from a non-interactive session", file=sys.stderr)
-        return False
-    print(f"[!] this will make live changes to {host} ({count} control(s)). continue? [y/N]: ", end="")
-    return stream.readline().strip().lower() == "y"
+    opened = None
+    if stream is None:
+        # read the answer from the terminal rather than stdin: pasting a
+        # multi-line block leaves its trailing newline in stdin, which would be
+        # consumed here as a silent "no" before the operator ever sees the prompt
+        try:
+            opened = open("/dev/tty")
+            stream = opened
+        except OSError:
+            stream = sys.stdin
+
+    try:
+        if not stream.isatty():
+            print("[!] refusing to apply changes from a non-interactive session", file=sys.stderr)
+            return False
+        print(
+            f"[!] this will make live changes to {host} ({count} control(s)). continue? [y/N]: ",
+            end="",
+            flush=True,
+        )
+        return stream.readline().strip().lower() == "y"
+    finally:
+        if opened:
+            opened.close()
 
 
 def execute(
