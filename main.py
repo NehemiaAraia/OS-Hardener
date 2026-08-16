@@ -219,9 +219,23 @@ def cmd_remediate(args) -> int:
 
         if target == "linux":
             outcomes = _remediate_linux(plan, args, apply)
+        elif apply:
+            # a second, privileged connection: the scanning account is read-only
+            # by design, so reusing its session here would fail and would make
+            # the separation of duties decorative rather than real
+            admin_user, admin_pass = _remediation_credentials("windows")
+            admin_conn = make_connection(
+                "winrm", host=host, username=admin_user,
+                password=admin_pass, insecure=args.insecure,
+            )
+            try:
+                outcomes = remediation.execute(
+                    plan, win_remediation.make_runner(admin_conn), apply
+                )
+            finally:
+                admin_conn.close()
         else:
-            runner = win_remediation.make_runner(conn)
-            outcomes = remediation.execute(plan, runner, apply)
+            outcomes = remediation.execute(plan, win_remediation.make_runner(conn), apply)
     finally:
         conn.close()
 

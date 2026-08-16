@@ -11,7 +11,15 @@ CATALOG = {
     "WIN-18.3.3": Fix(
         check_id="WIN-18.3.3",
         title="SMBv1 disabled",
-        command="Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart",
+        # the control is the LanmanServer registry value, so clear that as well
+        # as removing the feature — disabling the feature alone leaves the value
+        # set and the control still failing on the next scan
+        command=(
+            "Set-ItemProperty -Path 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters' "
+            "-Name SMB1 -Value 0 -Type DWord -Force; "
+            "Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart "
+            "-ErrorAction SilentlyContinue | Out-Null"
+        ),
         requires_reboot=True,
     ),
     "WIN-9.1": Fix(
