@@ -1,3 +1,7 @@
+? $v=(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters'
+  -Name SMB1 -EA SilentlyContinue).SMB1; if($null -eq $v){'absent'}else{$v}
+: exit_status: 0
+  stdout: '1'
 (Get-BitLockerVolume -MountPoint $env:SystemDrive).ProtectionStatus:
   exit_status: 0
   stdout: 'Off'
@@ -16,21 +20,15 @@
 (net accounts | Select-String 'Minimum password length').Line.Split(':')[1].Trim():
   exit_status: 0
   stdout: '7'
-Get-ItemPropertyValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\WindowsFirewall\DomainProfile' -Name 'EnableFirewall':
-  exit_status: 0
-  stdout: '1'
-Get-ItemPropertyValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\WindowsFirewall\PrivateProfile' -Name 'EnableFirewall':
-  exit_status: 0
-  stdout: '1'
-Get-ItemPropertyValue -Path 'HKLM:\SOFTWARE\Policies\Microsoft\WindowsFirewall\PublicProfile' -Name 'EnableFirewall':
-  exit_status: 0
-  stdout: '1'
+? '@(''DomainProfile'',''StandardProfile'',''PublicProfile'') | Where-Object { (Get-ItemProperty
+  (''HKLM:\SYSTEM\CurrentControlSet\Services\SharedAccess\Parameters\FirewallPolicy\''
+  + $_) -Name EnableFirewall -EA SilentlyContinue).EnableFirewall -ne 1 } | Measure-Object
+  | Select-Object -ExpandProperty Count'
+: exit_status: 0
+  stdout: '0'
 ? Get-ItemPropertyValue -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp'
   -Name 'UserAuthentication'
 : exit_status: 0
-  stdout: '1'
-Get-ItemPropertyValue -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters' -Name 'SMB1':
-  exit_status: 0
   stdout: '1'
 Get-LocalGroupMember -Group 'Administrators' | Select-Object -ExpandProperty Name:
   exit_status: 0

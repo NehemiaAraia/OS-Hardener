@@ -25,9 +25,7 @@ SCENARIOS = {
     # stock Windows Server 2022 AMI, pre-hardening
     "windows/baseline": {
         ("WIN-18.3.3", 0): ("1", 0),                        # SMBv1 present -> FAIL
-        ("WIN-9.1", 0): ("1", 0),
-        ("WIN-9.1", 1): ("1", 0),
-        ("WIN-9.1", 2): ("1", 0),                           # firewall on -> PASS
+        ("WIN-9.1", 0): ("0", 0),                           # 0 profiles disabled -> PASS
         ("WIN-2.3.1", 0): ("Administrator\nsvc-deploy", 0),  # manual -> WARN + list
         ("WIN-2.3.1.1", 0): ("False", 0),                   # guest disabled -> PASS
         ("WIN-1.1.1", 0): ("7", 0),                         # too short -> FAIL
@@ -42,9 +40,7 @@ SCENARIOS = {
     # after remediation
     "windows/hardened": {
         ("WIN-18.3.3", 0): ("0", 0),
-        ("WIN-9.1", 0): ("1", 0),
-        ("WIN-9.1", 1): ("1", 0),
-        ("WIN-9.1", 2): ("1", 0),
+        ("WIN-9.1", 0): ("0", 0),
         ("WIN-2.3.1", 0): ("Administrator", 0),
         ("WIN-2.3.1.1", 0): ("False", 0),
         ("WIN-1.1.1", 0): ("14", 0),

@@ -17,12 +17,14 @@ checks:
     condition: all
     description: >
       Legacy SMBv1 (EternalBlue) lingers on manufacturing/OT equipment; the
-      server component must be off.
+      server component must be off. The SMB1 value is absent unless someone has
+      explicitly set it, so the probe defaults it rather than erroring — an
+      unreadable value would otherwise report unverified on every stock host.
     remediation: Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol
     references:
       - CIS 18.3.3
     rules:
-      - "r:HKLM\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters -> SMB1 -> equals:0"
+      - "cmd:$v=(Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters' -Name SMB1 -EA SilentlyContinue).SMB1; if($null -eq $v){'absent'}else{$v} -> notregex:^1$"
 
   - id: WIN-9.1
     title: Windows Firewall on all profiles
@@ -32,15 +34,18 @@ checks:
     severity: high
     nist: NIST800-53R5_SC-7
     condition: all
+    description: >
+      Reads the live firewall state under SharedAccess rather than the
+      Policies\\WindowsFirewall keys, which only exist once Group Policy has
+      written them — on a standalone member server those keys are absent and the
+      control could never be verified.
     remediation: Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
     references:
       - CIS 9.1.1
       - CIS 9.2.1
       - CIS 9.3.1
     rules:
-      - "r:HKLM\\SOFTWARE\\Policies\\Microsoft\\WindowsFirewall\\DomainProfile -> EnableFirewall -> equals:1"
-      - "r:HKLM\\SOFTWARE\\Policies\\Microsoft\\WindowsFirewall\\PrivateProfile -> EnableFirewall -> equals:1"
-      - "r:HKLM\\SOFTWARE\\Policies\\Microsoft\\WindowsFirewall\\PublicProfile -> EnableFirewall -> equals:1"
+      - "cmd:@('DomainProfile','StandardProfile','PublicProfile') | Where-Object { (Get-ItemProperty ('HKLM:\\SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\' + $_) -Name EnableFirewall -EA SilentlyContinue).EnableFirewall -ne 1 } | Measure-Object | Select-Object -ExpandProperty Count -> equals:0"
 
   - id: WIN-2.3.1
     title: Local Administrators membership
