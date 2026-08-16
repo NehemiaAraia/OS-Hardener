@@ -54,7 +54,7 @@ def test_index_lists_scans(client):
 def test_detail_shows_controls_and_coverage(client):
     resp = client.get("/scan/1", headers=_auth())
     assert resp.status_code == 200
-    assert b"LNX-5.2.8" in resp.data
+    assert b"LNX-SSH-ROOT" in resp.data
     assert b"coverage" in resp.data.lower()
 
 

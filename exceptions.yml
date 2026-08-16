@@ -12,7 +12,7 @@
 # accepting a risk nobody has measured is not risk acceptance.
 
 waivers:
-  - check_id: WIN-18.9.10
+  - check_id: WIN-BITLOCKER
     reason: >
       BitLocker cannot be enabled unattended on a running cloud instance without
       an interactive TPM/recovery-key decision. Deferred to the next maintenance

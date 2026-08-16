@@ -7,7 +7,7 @@ requirements:
   description: Windows Server 2022, scanned over WinRM/HTTPS as svc-hardening-scanner
 
 checks:
-  - id: WIN-18.3.3
+  - id: WIN-SMB1
     title: SMBv1 disabled
     level: level1
     scored: scored
@@ -22,11 +22,11 @@ checks:
       unreadable value would otherwise report unverified on every stock host.
     remediation: Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol
     references:
-      - CIS 18.3.3
+      - CIS Windows Server 2022 Benchmark v5.1.0 §18.4.3
     rules:
       - "cmd:$v=(Get-ItemProperty 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\LanmanServer\\Parameters' -Name SMB1 -EA SilentlyContinue).SMB1; if($null -eq $v){'absent'}else{$v} -> notregex:^1$"
 
-  - id: WIN-9.1
+  - id: WIN-FIREWALL
     title: Windows Firewall on all profiles
     level: level1
     scored: scored
@@ -41,13 +41,12 @@ checks:
       control could never be verified.
     remediation: Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
     references:
-      - CIS 9.1.1
-      - CIS 9.2.1
-      - CIS 9.3.1
+      - CIS Windows Server 2022 Benchmark v5.1.0 §9.1.1, §9.2.1, §9.3.1
+      - CIS Windows Server 2022 STIG Benchmark v2.0.0 §20.31
     rules:
       - "cmd:@('DomainProfile','StandardProfile','PublicProfile') | Where-Object { (Get-ItemProperty ('HKLM:\\SYSTEM\\CurrentControlSet\\Services\\SharedAccess\\Parameters\\FirewallPolicy\\' + $_) -Name EnableFirewall -EA SilentlyContinue).EnableFirewall -ne 1 } | Measure-Object | Select-Object -ExpandProperty Count -> equals:0"
 
-  - id: WIN-2.3.1
+  - id: WIN-LOCAL-ADMINS
     title: Local Administrators membership
     level: level1
     scored: notscored
@@ -61,11 +60,11 @@ checks:
       auto-verified against a fixed baseline — flagged for manual review.
     remediation: Review the listed members against the approved administrator list.
     references:
-      - CIS 2.3.1
+      - Organizational control — privileged access review; no equivalent in CIS v5.1.0
     rules:
       - "cmd:Get-LocalGroupMember -Group 'Administrators' | Select-Object -ExpandProperty Name -> exists:"
 
-  - id: WIN-2.3.1.1
+  - id: WIN-GUEST
     title: Guest account disabled
     level: level1
     scored: scored
@@ -75,11 +74,11 @@ checks:
     condition: all
     remediation: Disable-LocalUser -Name 'Guest'
     references:
-      - CIS 2.3.1.1
+      - CIS Windows Server 2022 Benchmark v5.1.0 §2.3.1.1
     rules:
       - "cmd:(Get-LocalUser -Name 'Guest').Enabled -> equals:False"
 
-  - id: WIN-1.1.1
+  - id: WIN-PW-MINLEN
     title: Minimum password length (14+)
     level: level1
     scored: scored
@@ -89,11 +88,11 @@ checks:
     condition: all
     remediation: net accounts /minpwlen:14
     references:
-      - CIS 1.1.4
+      - CIS Windows Server 2022 Benchmark v5.1.0 §1.1.4
     rules:
       - "cmd:(net accounts | Select-String 'Minimum password length').Line.Split(':')[1].Trim() -> minint:14"
 
-  - id: WIN-1.1.5
+  - id: WIN-PW-COMPLEX
     title: Password complexity enabled
     level: level1
     scored: scored
@@ -103,11 +102,11 @@ checks:
     condition: all
     remediation: Enable 'Password must meet complexity requirements' in local security policy.
     references:
-      - CIS 1.1.5
+      - CIS Windows Server 2022 Benchmark v5.1.0 §1.1.5
     rules:
       - "cmd:secedit /export /cfg $env:TEMP\\sec.cfg | Out-Null; (Select-String -Path $env:TEMP\\sec.cfg -Pattern 'PasswordComplexity').Line.Split('=')[1].Trim() -> equals:1"
 
-  - id: WIN-2.3.7.4
+  - id: WIN-RDP-NLA
     title: RDP requires Network Level Authentication
     level: level1
     scored: scored
@@ -117,11 +116,11 @@ checks:
     condition: all
     remediation: Set UserAuthentication to 1 on the RDP-Tcp listener.
     references:
-      - CIS 2.3.7.4
+      - CIS Windows Server 2022 Benchmark v5.1.0 §18.10.57.3.9.4
     rules:
       - "r:HKLM\\SYSTEM\\CurrentControlSet\\Control\\Terminal Server\\WinStations\\RDP-Tcp -> UserAuthentication -> equals:1"
 
-  - id: WIN-17.1
+  - id: WIN-AUDIT-LOGON
     title: Audit logging for logon events (success and failure)
     level: level1
     scored: scored
@@ -131,11 +130,11 @@ checks:
     condition: all
     remediation: auditpol /set /subcategory:"Logon" /success:enable /failure:enable
     references:
-      - CIS 17.1.1
+      - CIS Windows Server 2022 Benchmark v5.1.0 §17.5.4
     rules:
       - "cmd:(auditpol /get /subcategory:'Logon' | Select-String '  Logon').Line -> regex:Success and Failure"
 
-  - id: WIN-18.9.10
+  - id: WIN-BITLOCKER
     title: BitLocker enabled on the OS volume
     level: level1
     scored: notscored
@@ -149,11 +148,11 @@ checks:
       rather than dragging the score.
     remediation: No safe auto-fix defined — enable BitLocker during a planned maintenance window.
     references:
-      - CIS 18.9.10
+      - Organizational control — CIS v5.1.0 §18.10.9 is present but unmapped
     rules:
       - "cmd:(Get-BitLockerVolume -MountPoint $env:SystemDrive).ProtectionStatus -> equals:On"
 
-  - id: WIN-5.1
+  - id: WIN-LEGACY-SVC
     title: Legacy services disabled (Telnet, Remote Registry)
     level: level1
     scored: scored
@@ -168,12 +167,12 @@ checks:
       that reported a running Remote Registry as compliant. Start=4 is disabled.
     remediation: Stop-Service and Set-Service -StartupType Disabled for TlntSvr and RemoteRegistry.
     references:
-      - CIS 5.1
-      - CIS 5.26
+      - CIS Windows Server 2022 STIG Benchmark v2.0.0 §20.62 (Telnet Client)
+      - Remote Registry: organizational control, no CIS v5.1.0 equivalent
     rules:
       - "cmd:@('TlntSvr','RemoteRegistry') | Where-Object { $p = 'HKLM:\\SYSTEM\\CurrentControlSet\\Services\\' + $_; (Test-Path $p) -and ((Get-ItemProperty $p -Name Start -EA SilentlyContinue).Start -ne 4) } | Measure-Object | Select-Object -ExpandProperty Count -> equals:0"
 
-  - id: WIN-18.10.42
+  - id: WIN-PATCH-AGE
     title: Patch recency (last update within 35 days)
     level: level1
     scored: scored
@@ -186,6 +185,6 @@ checks:
       clock; an unparseable result reports WARN rather than passing.
     remediation: Install pending updates (Install-WindowsUpdate / WSUS cycle).
     references:
-      - CIS 18.10.42
+      - Operational control — NIST SP 800-53 Rev 5 SI-2; no CIS equivalent
     rules:
       - "cmd:[int]((Get-Date) - (Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 1).InstalledOn).TotalDays -> maxint:35"

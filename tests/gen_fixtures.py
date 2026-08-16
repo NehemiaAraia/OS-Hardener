@@ -24,74 +24,74 @@ SSHD_HARDENED = "PermitRootLogin no\nPasswordAuthentication no\nPort 22\n"
 SCENARIOS = {
     # stock Windows Server 2022 AMI, pre-hardening
     "windows/baseline": {
-        ("WIN-18.3.3", 0): ("1", 0),                        # SMBv1 present -> FAIL
-        ("WIN-9.1", 0): ("0", 0),                           # 0 profiles disabled -> PASS
-        ("WIN-2.3.1", 0): ("Administrator\nsvc-deploy", 0),  # manual -> WARN + list
-        ("WIN-2.3.1.1", 0): ("False", 0),                   # guest disabled -> PASS
-        ("WIN-1.1.1", 0): ("7", 0),                         # too short -> FAIL
-        ("WIN-1.1.5", 0): ("1", 0),                         # complexity on -> PASS
-        ("WIN-2.3.7.4", 0): ("1", 0),                       # NLA on -> PASS
-        ("WIN-17.1", 0): ("  Logon                    Success", 0),  # no failure auditing -> FAIL
-        ("WIN-18.9.10", 0): ("Off", 0),                     # notscored -> FAIL, no auto-fix
-        ("WIN-5.1", 0): ("1", 0),                           # 1 legacy service enabled -> FAIL
-        ("WIN-18.10.42", 0): ("12", 0),                     # patched 12d ago -> PASS
+        ("WIN-SMB1", 0): ("1", 0),                        # SMBv1 present -> FAIL
+        ("WIN-FIREWALL", 0): ("0", 0),                           # 0 profiles disabled -> PASS
+        ("WIN-LOCAL-ADMINS", 0): ("Administrator\nsvc-deploy", 0),  # manual -> WARN + list
+        ("WIN-GUEST", 0): ("False", 0),                   # guest disabled -> PASS
+        ("WIN-PW-MINLEN", 0): ("7", 0),                         # too short -> FAIL
+        ("WIN-PW-COMPLEX", 0): ("1", 0),                         # complexity on -> PASS
+        ("WIN-RDP-NLA", 0): ("1", 0),                       # NLA on -> PASS
+        ("WIN-AUDIT-LOGON", 0): ("  Logon                    Success", 0),  # no failure auditing -> FAIL
+        ("WIN-BITLOCKER", 0): ("Off", 0),                     # notscored -> FAIL, no auto-fix
+        ("WIN-LEGACY-SVC", 0): ("1", 0),                           # 1 legacy service enabled -> FAIL
+        ("WIN-PATCH-AGE", 0): ("12", 0),                     # patched 12d ago -> PASS
     },
     # after remediation
     "windows/hardened": {
-        ("WIN-18.3.3", 0): ("0", 0),
-        ("WIN-9.1", 0): ("0", 0),
-        ("WIN-2.3.1", 0): ("Administrator", 0),
-        ("WIN-2.3.1.1", 0): ("False", 0),
-        ("WIN-1.1.1", 0): ("14", 0),
-        ("WIN-1.1.5", 0): ("1", 0),
-        ("WIN-2.3.7.4", 0): ("1", 0),
-        ("WIN-17.1", 0): ("  Logon                    Success and Failure", 0),
-        ("WIN-18.9.10", 0): ("Off", 0),                     # unchanged, still manual
-        ("WIN-5.1", 0): ("0", 0),
-        ("WIN-18.10.42", 0): ("12", 0),
+        ("WIN-SMB1", 0): ("0", 0),
+        ("WIN-FIREWALL", 0): ("0", 0),
+        ("WIN-LOCAL-ADMINS", 0): ("Administrator", 0),
+        ("WIN-GUEST", 0): ("False", 0),
+        ("WIN-PW-MINLEN", 0): ("14", 0),
+        ("WIN-PW-COMPLEX", 0): ("1", 0),
+        ("WIN-RDP-NLA", 0): ("1", 0),
+        ("WIN-AUDIT-LOGON", 0): ("  Logon                    Success and Failure", 0),
+        ("WIN-BITLOCKER", 0): ("Off", 0),                     # unchanged, still manual
+        ("WIN-LEGACY-SVC", 0): ("0", 0),
+        ("WIN-PATCH-AGE", 0): ("12", 0),
     },
     # stock RHEL 9 AMI, pre-hardening
     "linux/baseline": {
-        ("LNX-5.2.8", 0): (SSHD_BASELINE, 0),
-        ("LNX-5.2.9", 0): (SSHD_BASELINE, 0),
-        ("LNX-3.5.1", 0): ("inactive", 3),
-        ("LNX-3.5.1", 1): ("inactive", 3),                  # no firewall -> FAIL
-        ("LNX-6.1.1", 0): ("644", 0),
-        ("LNX-6.1.2", 0): ("0", 0),
-        ("LNX-6.1.10", 0): ("3", 0),                        # 3 world-writable files -> FAIL
-        ("LNX-6.1.13", 0): (SUID_LIST, 0),                  # manual -> WARN + list
-        ("LNX-2.2.1", 0): ("1", 0),                         # vsftpd installed -> FAIL
-        ("LNX-5.4.1", 0): ("", 1),                          # minlen unset -> WARN, not PASS
-        ("LNX-5.3.4", 0): ("1", 0),                         # a NOPASSWD:ALL grant -> FAIL
-        ("LNX-4.1.1", 0): ("active", 0),
-        ("LNX-4.1.1", 1): ("inactive", 3),                  # rsyslog down -> FAIL
-        ("LNX-1.9", 0): ("3", 0),
+        ("LNX-SSH-ROOT", 0): (SSHD_BASELINE, 0),
+        ("LNX-SSH-PASSAUTH", 0): (SSHD_BASELINE, 0),
+        ("LNX-FIREWALL", 0): ("inactive", 3),
+        ("LNX-FIREWALL", 1): ("inactive", 3),                  # no firewall -> FAIL
+        ("LNX-PASSWD-PERMS", 0): ("644", 0),
+        ("LNX-SHADOW-PERMS", 0): ("0", 0),
+        ("LNX-WORLD-WRITE", 0): ("3", 0),                        # 3 world-writable files -> FAIL
+        ("LNX-SUID-AUDIT", 0): (SUID_LIST, 0),                  # manual -> WARN + list
+        ("LNX-LEGACY-PKGS", 0): ("1", 0),                         # vsftpd installed -> FAIL
+        ("LNX-PW-MINLEN", 0): ("", 1),                          # minlen unset -> WARN, not PASS
+        ("LNX-SUDO-NOPASSWD", 0): ("1", 0),                         # a NOPASSWD:ALL grant -> FAIL
+        ("LNX-AUDIT-LOG", 0): ("active", 0),
+        ("LNX-AUDIT-LOG", 1): ("inactive", 3),                  # rsyslog down -> FAIL
+        ("LNX-PATCH-AGE", 0): ("3", 0),
     },
     # after remediation
     "linux/hardened": {
-        ("LNX-5.2.8", 0): (SSHD_HARDENED, 0),
-        ("LNX-5.2.9", 0): (SSHD_HARDENED, 0),
-        ("LNX-3.5.1", 0): ("active", 0),
-        ("LNX-3.5.1", 1): ("inactive", 3),                  # firewalld alone satisfies 'any'
-        ("LNX-6.1.1", 0): ("644", 0),
-        ("LNX-6.1.2", 0): ("0", 0),
-        ("LNX-6.1.10", 0): ("0", 0),
-        ("LNX-6.1.13", 0): (SUID_LIST, 0),
-        ("LNX-2.2.1", 0): ("0", 0),
-        ("LNX-5.4.1", 0): ("14", 0),
-        ("LNX-5.3.4", 0): ("0", 0),
-        ("LNX-4.1.1", 0): ("active", 0),
-        ("LNX-4.1.1", 1): ("active", 0),
-        ("LNX-1.9", 0): ("3", 0),
+        ("LNX-SSH-ROOT", 0): (SSHD_HARDENED, 0),
+        ("LNX-SSH-PASSAUTH", 0): (SSHD_HARDENED, 0),
+        ("LNX-FIREWALL", 0): ("active", 0),
+        ("LNX-FIREWALL", 1): ("inactive", 3),                  # firewalld alone satisfies 'any'
+        ("LNX-PASSWD-PERMS", 0): ("644", 0),
+        ("LNX-SHADOW-PERMS", 0): ("0", 0),
+        ("LNX-WORLD-WRITE", 0): ("0", 0),
+        ("LNX-SUID-AUDIT", 0): (SUID_LIST, 0),
+        ("LNX-LEGACY-PKGS", 0): ("0", 0),
+        ("LNX-PW-MINLEN", 0): ("14", 0),
+        ("LNX-SUDO-NOPASSWD", 0): ("0", 0),
+        ("LNX-AUDIT-LOG", 0): ("active", 0),
+        ("LNX-AUDIT-LOG", 1): ("active", 0),
+        ("LNX-PATCH-AGE", 0): ("3", 0),
     },
     # the scanner account can reach the host but sudo is refused, so the helper
     # prints nothing — these controls must report WARN, not a fabricated pass
     "linux/sudo_denied": {
-        ("LNX-5.2.8", 0): (SSHD_HARDENED, 0),
-        ("LNX-5.2.9", 0): (SSHD_HARDENED, 0),
-        ("LNX-6.1.10", 0): ("", 1),
-        ("LNX-6.1.13", 0): ("", 1),
-        ("LNX-5.3.4", 0): ("", 1),
+        ("LNX-SSH-ROOT", 0): (SSHD_HARDENED, 0),
+        ("LNX-SSH-PASSAUTH", 0): (SSHD_HARDENED, 0),
+        ("LNX-WORLD-WRITE", 0): ("", 1),
+        ("LNX-SUID-AUDIT", 0): ("", 1),
+        ("LNX-SUDO-NOPASSWD", 0): ("", 1),
     },
     # nothing recorded -> every probe is 'unreachable' -> every check WARN
     "linux/unreachable": {},

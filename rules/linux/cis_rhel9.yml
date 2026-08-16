@@ -7,7 +7,7 @@ requirements:
   description: RHEL 9, scanned over SSH (key-based) as svc-hardening-scanner
 
 checks:
-  - id: LNX-5.2.8
+  - id: LNX-SSH-ROOT
     title: root SSH login disabled
     level: level1
     scored: scored
@@ -17,11 +17,11 @@ checks:
     condition: all
     remediation: Set 'PermitRootLogin no' in /etc/ssh/sshd_config and reload sshd.
     references:
-      - CIS 5.2.8
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §5.1.20
     rules:
       - "cmd:sudo -n /usr/local/sbin/hardening-scan-helper sshd-config -> regex:^\\s*PermitRootLogin\\s+no\\b"
 
-  - id: LNX-5.2.9
+  - id: LNX-SSH-PASSAUTH
     title: SSH password authentication disabled (key-only)
     level: level1
     scored: scored
@@ -31,11 +31,11 @@ checks:
     condition: all
     remediation: Set 'PasswordAuthentication no' in /etc/ssh/sshd_config and reload sshd.
     references:
-      - CIS 5.2.9
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §5.1.22
     rules:
       - "cmd:sudo -n /usr/local/sbin/hardening-scan-helper sshd-config -> regex:^\\s*PasswordAuthentication\\s+no\\b"
 
-  - id: LNX-3.5.1
+  - id: LNX-FIREWALL
     title: host firewall active
     level: level1
     scored: scored
@@ -45,12 +45,12 @@ checks:
     condition: any
     remediation: Enable firewalld (systemctl enable --now firewalld) or nftables.
     references:
-      - CIS 3.5.1
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §4.2
     rules:
       - "svc:firewalld -> running:"
       - "svc:nftables -> running:"
 
-  - id: LNX-6.1.1
+  - id: LNX-PASSWD-PERMS
     title: /etc/passwd permissions (<= 0644)
     level: level1
     scored: scored
@@ -60,11 +60,11 @@ checks:
     condition: all
     remediation: chown root:root /etc/passwd && chmod 0644 /etc/passwd
     references:
-      - CIS 6.1.1
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §7.1.1
     rules:
       - "perm:/etc/passwd -> maxmode:0644"
 
-  - id: LNX-6.1.2
+  - id: LNX-SHADOW-PERMS
     title: /etc/shadow permissions (<= 0640)
     level: level1
     scored: scored
@@ -74,11 +74,11 @@ checks:
     condition: all
     remediation: chown root:root /etc/shadow && chmod 0000 /etc/shadow
     references:
-      - CIS 6.1.2
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §7.1.5
     rules:
       - "perm:/etc/shadow -> maxmode:0640"
 
-  - id: LNX-6.1.10
+  - id: LNX-WORLD-WRITE
     title: No world-writable files
     level: level2
     scored: scored
@@ -91,11 +91,11 @@ checks:
       directories it can't read and would under-report.
     remediation: Remove the world-writable bit (chmod o-w) from the listed files.
     references:
-      - CIS 6.1.10
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §7.1.11
     rules:
       - "cmd:sudo -n /usr/local/sbin/hardening-scan-helper world-writable -> maxint:0"
 
-  - id: LNX-6.1.13
+  - id: LNX-SUID-AUDIT
     title: SUID/SGID binary audit
     level: level2
     scored: notscored
@@ -109,11 +109,11 @@ checks:
       pass/fail baseline — the list is collected and put in front of a reviewer.
     remediation: Compare the listed binaries against the expected set for this build.
     references:
-      - CIS 6.1.13
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §7.1.13
     rules:
       - "cmd:sudo -n /usr/local/sbin/hardening-scan-helper suid -> exists:"
 
-  - id: LNX-2.2.1
+  - id: LNX-LEGACY-PKGS
     title: Legacy services not installed (telnet, rsh, ftp)
     level: level1
     scored: scored
@@ -127,11 +127,11 @@ checks:
       failed probe.
     remediation: dnf remove telnet-server rsh-server vsftpd
     references:
-      - CIS 2.2.1
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §2.1.15
     rules:
       - "cmd:rpm -qa | grep -Ec '^(telnet-server|rsh-server|vsftpd)-' || true -> equals:0"
 
-  - id: LNX-5.4.1
+  - id: LNX-PW-MINLEN
     title: Password policy (minlen 14+)
     level: level1
     scored: scored
@@ -144,11 +144,11 @@ checks:
       absence of a policy is not evidence of a compliant one.
     remediation: Set 'minlen = 14' in /etc/security/pwquality.conf
     references:
-      - CIS 5.4.1
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §5.3.3.2.2
     rules:
       - "cmd:grep -E '^\\s*minlen' /etc/security/pwquality.conf 2>/dev/null | awk -F= '{print $2}' | tr -d ' ' -> minint:14"
 
-  - id: LNX-5.3.4
+  - id: LNX-SUDO-NOPASSWD
     title: Sudoers audit (no NOPASSWD:ALL)
     level: level1
     scored: scored
@@ -164,11 +164,11 @@ checks:
       verb-scoped, so it does not trip this control.
     remediation: Remove blanket NOPASSWD:ALL grants from /etc/sudoers and /etc/sudoers.d.
     references:
-      - CIS 5.3.4
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §5.2.5
     rules:
       - "cmd:sudo -n /usr/local/sbin/hardening-scan-helper sudoers -> maxint:0"
 
-  - id: LNX-4.1.1
+  - id: LNX-AUDIT-LOG
     title: auditd and rsyslog running
     level: level1
     scored: scored
@@ -178,13 +178,13 @@ checks:
     condition: all
     remediation: systemctl enable --now auditd rsyslog
     references:
-      - CIS 4.1.1.1
-      - CIS 4.2.1.1
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §6.3.1.4 (auditd)
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §6.2.3.2 (rsyslog)
     rules:
       - "svc:auditd -> running:"
       - "svc:rsyslog -> running:"
 
-  - id: LNX-1.9
+  - id: LNX-PATCH-AGE
     title: Patch recency (last update within 35 days)
     level: level1
     scored: scored
@@ -197,6 +197,6 @@ checks:
       result doesn't depend on the scanner's clock.
     remediation: dnf update
     references:
-      - CIS 1.9
+      - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §1.2.2.1
     rules:
       - "cmd:echo $(( ( $(date +%s) - $(rpm -qa --qf '%{INSTALLTIME}\\n' | sort -n | tail -1) ) / 86400 )) -> maxint:35"

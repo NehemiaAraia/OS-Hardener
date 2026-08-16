@@ -65,7 +65,7 @@ def test_delta_reports_improvements(tmp_path):
     assert d.score_before == 30 and d.score_after == 100
     assert d.score_change == 70
     improved = {c.check_id for c in d.changes if c.improved}
-    assert "LNX-5.2.8" in improved and "LNX-3.5.1" in improved
+    assert "LNX-SSH-ROOT" in improved and "LNX-FIREWALL" in improved
 
 
 def test_delta_reports_regressions(tmp_path):
@@ -100,8 +100,8 @@ def test_plan_only_targets_failing_controls(tmp_path):
     results, _ = scan_of("windows", "baseline")
     plan = rem.build_plan(results, rem_win.CATALOG, "windows", "10.0.0.5")
     planned = {f.check_id for f in plan.fixes}
-    assert "WIN-18.3.3" in planned          # failing, fixable
-    assert "WIN-9.1" not in planned          # already passing, left alone
+    assert "WIN-SMB1" in planned          # failing, fixable
+    assert "WIN-FIREWALL" not in planned          # already passing, left alone
 
 
 def test_plan_never_touches_warn_controls():
@@ -116,8 +116,8 @@ def test_plan_never_touches_warn_controls():
 def test_control_without_safe_fix_is_skipped_not_silently_dropped():
     results, _ = scan_of("windows", "baseline")
     plan = rem.build_plan(results, rem_win.CATALOG, "windows", "10.0.0.5")
-    assert "WIN-18.9.10" in {f.check_id for f in plan.skipped}
-    assert "WIN-18.9.10" not in {f.check_id for f in plan.fixes}
+    assert "WIN-BITLOCKER" in {f.check_id for f in plan.skipped}
+    assert "WIN-BITLOCKER" not in {f.check_id for f in plan.fixes}
 
 
 # --- remediation execution ---------------------------------------------------
@@ -198,7 +198,7 @@ def test_windows_credentials_are_not_written_to_disk():
 
 def test_playbook_missing_ansible_is_reported(monkeypatch):
     monkeypatch.setattr(rem_linux.shutil, "which", lambda _: None)
-    ok, detail = rem_linux.run_playbook("h", "u", "k", ["LNX-5.2.8"], check=True)
+    ok, detail = rem_linux.run_playbook("h", "u", "k", ["LNX-SSH-ROOT"], check=True)
     assert ok is False and "ansible-playbook" in detail
 
 
@@ -234,7 +234,7 @@ def test_host_validation_rejects_inventory_injection():
 
 def test_playbook_refuses_a_host_with_a_comma():
     ok, detail = rem_linux.run_playbook(
-        "10.0.0.5,10.0.0.99", "u", "k", ["LNX-5.2.8"], check=True
+        "10.0.0.5,10.0.0.99", "u", "k", ["LNX-SSH-ROOT"], check=True
     )
     assert ok is False and "invalid host" in detail
 
@@ -262,4 +262,4 @@ def test_failing_control_with_no_catalog_entry_is_reported():
     failing = {r.check.id for r in results if r.status is Status.FAIL}
     # every failing control is either planned, skipped, or explicitly named
     assert failing == planned | {f.check_id for f in plan.skipped} | reported
-    assert "LNX-5.3.4" in reported
+    assert "LNX-SUDO-NOPASSWD" in reported

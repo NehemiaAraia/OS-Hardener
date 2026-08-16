@@ -35,7 +35,7 @@ def scan_with(waiver_list, scenario="windows/baseline", today=TODAY, host="10.0.
 
 VALID = """
 waivers:
-  - check_id: WIN-18.3.3
+  - check_id: WIN-SMB1
     reason: legacy line control system needs SMBv1 until Q4 replacement
     owner: a.araia
     ticket: CHG-1042
@@ -48,7 +48,7 @@ waivers:
 def test_loads_a_valid_waiver(tmp_path):
     load = w.load_waivers(write_waivers(tmp_path, VALID))
     assert not load.problems
-    assert load.waivers[0].check_id == "WIN-18.3.3"
+    assert load.waivers[0].check_id == "WIN-SMB1"
 
 
 def test_missing_file_is_not_an_error(tmp_path):
@@ -60,7 +60,7 @@ def test_waiver_without_expiry_is_rejected(tmp_path):
     """A permanent waiver is how an accepted risk becomes a forgotten one."""
     load = w.load_waivers(write_waivers(tmp_path, """
 waivers:
-  - check_id: WIN-18.3.3
+  - check_id: WIN-SMB1
     reason: because
     owner: a.araia
 """))
@@ -71,7 +71,7 @@ waivers:
 def test_waiver_without_owner_or_reason_is_rejected(tmp_path):
     load = w.load_waivers(write_waivers(tmp_path, """
 waivers:
-  - check_id: WIN-18.3.3
+  - check_id: WIN-SMB1
     expires: 2026-12-31
 """))
     assert load.waivers == []
@@ -81,7 +81,7 @@ waivers:
 def test_unparseable_expiry_is_rejected_not_assumed(tmp_path):
     load = w.load_waivers(write_waivers(tmp_path, """
 waivers:
-  - check_id: WIN-18.3.3
+  - check_id: WIN-SMB1
     reason: because
     owner: a.araia
     expires: "whenever"
@@ -95,7 +95,7 @@ waivers:
 def test_waiver_marks_the_finding_without_hiding_it(tmp_path):
     waivers = w.load_waivers(write_waivers(tmp_path, VALID)).waivers
     r, summary, _ = scan_with(waivers)
-    smb = r["WIN-18.3.3"]
+    smb = r["WIN-SMB1"]
     assert smb.status is Status.FAIL       # still reported as failing
     assert smb.waived is True
     assert summary["waived"] == 1
@@ -112,7 +112,7 @@ def test_waiver_removes_the_control_from_the_score(tmp_path):
 def test_expired_waiver_stops_applying(tmp_path):
     waivers = w.load_waivers(write_waivers(tmp_path, VALID)).waivers
     r, summary, notes = scan_with(waivers, today=LATER)
-    assert r["WIN-18.3.3"].waived is False
+    assert r["WIN-SMB1"].waived is False
     assert summary["waived"] == 0
     assert any("expired" in n for n in notes)
 
@@ -120,28 +120,28 @@ def test_expired_waiver_stops_applying(tmp_path):
 def test_waiver_scoped_to_another_host_does_not_apply(tmp_path):
     waivers = w.load_waivers(write_waivers(tmp_path, """
 waivers:
-  - check_id: WIN-18.3.3
+  - check_id: WIN-SMB1
     reason: scoped to one machine only
     owner: a.araia
     expires: 2026-12-31
     hosts: ["10.0.0.99"]
 """)).waivers
     r, _, _ = scan_with(waivers, host="10.0.0.5")
-    assert r["WIN-18.3.3"].waived is False
+    assert r["WIN-SMB1"].waived is False
 
 
 def test_warn_cannot_be_waived(tmp_path):
     """Accepting a risk nobody measured is not risk acceptance."""
     waivers = w.load_waivers(write_waivers(tmp_path, """
 waivers:
-  - check_id: WIN-2.3.1
+  - check_id: WIN-LOCAL-ADMINS
     reason: trying to silence a control that was never verified
     owner: a.araia
     expires: 2026-12-31
 """)).waivers
     r, summary, notes = scan_with(waivers)
-    assert r["WIN-2.3.1"].status is Status.WARN
-    assert r["WIN-2.3.1"].waived is False
+    assert r["WIN-LOCAL-ADMINS"].status is Status.WARN
+    assert r["WIN-LOCAL-ADMINS"].waived is False
     assert summary["waived"] == 0
     assert any("does not apply" in n for n in notes)
 
@@ -149,7 +149,7 @@ waivers:
 def test_stale_waiver_for_a_removed_control_is_reported(tmp_path):
     waivers = w.load_waivers(write_waivers(tmp_path, """
 waivers:
-  - check_id: WIN-99.9.9
+  - check_id: WIN-REMOVED-CONTROL
     reason: control was removed from the benchmark
     owner: a.araia
     expires: 2026-12-31
@@ -166,7 +166,7 @@ def test_waived_control_is_not_remediated(tmp_path):
         "windows", conn, ROOT / "rules", waiver_list=waivers, host="10.0.0.5", today=TODAY
     )
     plan = rem.build_plan(results, rem_win.CATALOG, "windows", "10.0.0.5")
-    assert "WIN-18.3.3" not in {f.check_id for f in plan.fixes}
+    assert "WIN-SMB1" not in {f.check_id for f in plan.fixes}
 
 
 def test_shipped_exceptions_file_is_valid():

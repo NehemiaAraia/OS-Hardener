@@ -20,7 +20,7 @@
         name: SMB1
         data: 0
         type: dword
-      tags: [WIN-18.3.3, smb]
+      tags: [WIN-SMB1, smb]
 
     - name: Remove the SMB1Protocol feature
       ansible.windows.win_optional_feature:
@@ -28,18 +28,18 @@
         state: absent
       register: smb1_feature
       failed_when: false
-      tags: [WIN-18.3.3, smb]
+      tags: [WIN-SMB1, smb]
 
     - name: Enforce a minimum password length
       ansible.windows.win_shell: net accounts /minpwlen:14
       changed_when: true
-      tags: [WIN-1.1.1, password]
+      tags: [WIN-PW-MINLEN, password]
 
     - name: Enable logon auditing for success and failure
       ansible.windows.win_shell: >-
         auditpol /set /subcategory:"Logon" /success:enable /failure:enable
       changed_when: true
-      tags: [WIN-17.1, audit]
+      tags: [WIN-AUDIT-LOGON, audit]
 
     - name: Disable legacy remote-access services
       ansible.windows.win_service:
@@ -49,19 +49,19 @@
       loop:
         - RemoteRegistry
       failed_when: false
-      tags: [WIN-5.1, services]
+      tags: [WIN-LEGACY-SVC, services]
 
     - name: Enable the firewall on all profiles
       ansible.windows.win_shell: >-
         Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
       changed_when: true
-      tags: [WIN-9.1, firewall]
+      tags: [WIN-FIREWALL, firewall]
 
     - name: Disable the Guest account
       ansible.windows.win_user:
         name: Guest
         account_disabled: true
-      tags: [WIN-2.3.1.1, accounts]
+      tags: [WIN-GUEST, accounts]
 
     - name: Require Network Level Authentication for RDP
       ansible.windows.win_regedit:
@@ -69,4 +69,4 @@
         name: UserAuthentication
         data: 1
         type: dword
-      tags: [WIN-2.3.7.4, rdp]
+      tags: [WIN-RDP-NLA, rdp]

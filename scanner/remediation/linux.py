@@ -18,42 +18,42 @@ PLAYBOOK = "playbooks/linux_remediate.yml"
 
 # check id -> fix. The tag is what scopes the playbook to this control.
 CATALOG = {
-    "LNX-5.2.8": Fix(
-        check_id="LNX-5.2.8",
+    "LNX-SSH-ROOT": Fix(
+        check_id="LNX-SSH-ROOT",
         title="root SSH login disabled",
-        command="ansible tag LNX-5.2.8 (lineinfile PermitRootLogin no, validated, reload sshd)",
+        command="ansible tag LNX-SSH-ROOT (lineinfile PermitRootLogin no, validated, reload sshd)",
     ),
-    "LNX-5.2.9": Fix(
-        check_id="LNX-5.2.9",
+    "LNX-SSH-PASSAUTH": Fix(
+        check_id="LNX-SSH-PASSAUTH",
         title="SSH password authentication disabled",
-        command="ansible tag LNX-5.2.9 (lineinfile PasswordAuthentication no, validated, reload sshd)",
+        command="ansible tag LNX-SSH-PASSAUTH (lineinfile PasswordAuthentication no, validated, reload sshd)",
     ),
-    "LNX-3.5.1": Fix(
-        check_id="LNX-3.5.1",
+    "LNX-FIREWALL": Fix(
+        check_id="LNX-FIREWALL",
         title="host firewall active",
-        command="ansible tag LNX-3.5.1 (install + enable firewalld)",
+        command="ansible tag LNX-FIREWALL (install + enable firewalld)",
     ),
-    "LNX-4.1.1": Fix(
-        check_id="LNX-4.1.1",
+    "LNX-AUDIT-LOG": Fix(
+        check_id="LNX-AUDIT-LOG",
         title="auditd and rsyslog running",
-        command="ansible tag LNX-4.1.1 (enable + start auditd and rsyslog)",
+        command="ansible tag LNX-AUDIT-LOG (enable + start auditd and rsyslog)",
     ),
-    "LNX-5.4.1": Fix(
-        check_id="LNX-5.4.1",
+    "LNX-PW-MINLEN": Fix(
+        check_id="LNX-PW-MINLEN",
         title="password policy (minlen 14+)",
-        command="ansible tag LNX-5.4.1 (set minlen = 14 in pwquality.conf)",
+        command="ansible tag LNX-PW-MINLEN (set minlen = 14 in pwquality.conf)",
     ),
-    "LNX-6.1.1": Fix(
-        check_id="LNX-6.1.1",
+    "LNX-PASSWD-PERMS": Fix(
+        check_id="LNX-PASSWD-PERMS",
         title="/etc/passwd permissions",
-        command="ansible tag LNX-6.1.1 (chmod 0644 root:root)",
+        command="ansible tag LNX-PASSWD-PERMS (chmod 0644 root:root)",
     ),
-    "LNX-6.1.2": Fix(
-        check_id="LNX-6.1.2",
+    "LNX-SHADOW-PERMS": Fix(
+        check_id="LNX-SHADOW-PERMS",
         title="/etc/shadow permissions",
-        command="ansible tag LNX-6.1.2 (chmod 0000 root:root)",
+        command="ansible tag LNX-SHADOW-PERMS (chmod 0000 root:root)",
     ),
-    # LNX-5.3.4 (sudoers NOPASSWD:ALL) is deliberately absent. Removing the
+    # LNX-SUDO-NOPASSWD (sudoers NOPASSWD:ALL) is deliberately absent. Removing the
     # admin account's passwordless sudo is the change most likely to lock an
     # operator out of the machine being hardened, so it stays a reported finding.
 }

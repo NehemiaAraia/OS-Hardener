@@ -95,7 +95,7 @@ def cmd_scan(args) -> int:
             note = f"  ({r.check.severity})"
         elif r.status.value == "WARN":
             note = "  (manual review)" if r.check.manual else "  (review)"
-        print(f"[{i:>2}/{total}]  {r.check.id:<14} {title} {dots} {color}{r.status.value}{_RESET}{note}")
+        print(f"[{i:>2}/{total}]  {r.check.id:<18} {title} {dots} {color}{r.status.value}{_RESET}{note}")
 
     for note in notes:
         print(f"[!] {note}")
@@ -152,9 +152,9 @@ def _print_delta(d) -> None:
 
     for c in d.changes:
         marker = "REGRESSED" if c.regressed else ""
-        print(f"    {c.check_id:<16} {_fit(c.title, 40)} {c.before} -> {c.after}  {marker}".rstrip())
+        print(f"    {c.check_id:<18} {_fit(c.title, 40)} {c.before} -> {c.after}  {marker}".rstrip())
     for c in d.unchanged_failures:
-        print(f"    {c.check_id:<16} {_fit(c.title, 40)} {c.before} -> {c.after}  (unchanged)")
+        print(f"    {c.check_id:<18} {_fit(c.title, 40)} {c.before} -> {c.after}  (unchanged)")
 
 
 def _fit(text: str, width: int) -> str:
@@ -204,7 +204,7 @@ def cmd_remediate(args) -> int:
         plan = remediation.build_plan(results, catalog, target, host or "fixture")
 
         for check_id, title in plan.no_fix_defined:
-            print(f"[NO FIX]  {check_id:<14} {title} — failing, no automated fix defined")
+            print(f"[NO FIX]  {check_id:<18} {title} — failing, no automated fix defined")
 
         if not plan.actionable and not plan.skipped:
             print("[*] nothing to remediate — no failing controls have a defined fix")
@@ -259,16 +259,16 @@ def _report_outcomes(outcomes, apply) -> int:
     applied = failed = 0
     for o in outcomes:
         if o.action == "SKIP":
-            print(f"[SKIP]    {o.fix.check_id:<14} {o.fix.title} — {o.detail}")
+            print(f"[SKIP]    {o.fix.check_id:<18} {o.fix.title} — {o.detail}")
         elif o.action == "DRY-RUN":
-            print(f"[DRY-RUN] {o.fix.check_id:<14} {o.fix.title}")
+            print(f"[DRY-RUN] {o.fix.check_id:<18} {o.fix.title}")
             print(f"    would run: {o.detail}")
         elif o.action == "APPLY":
-            print(f"[APPLY]   {o.fix.check_id:<14} {o.fix.title} .......... {o.detail}")
+            print(f"[APPLY]   {o.fix.check_id:<18} {o.fix.title} .......... {o.detail}")
             applied += 1
             reboot = reboot or o.fix.requires_reboot
         else:
-            print(f"[FAIL]    {o.fix.check_id:<14} {o.fix.title} — {o.detail}")
+            print(f"[FAIL]    {o.fix.check_id:<18} {o.fix.title} — {o.detail}")
             failed += 1
 
     if apply:

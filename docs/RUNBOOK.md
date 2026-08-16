@@ -123,9 +123,9 @@ test against. The likely failures, in order:
 |---|---|---|
 | Everything WARN, `<unreachable>` | auth or firewall | check env vars, `nc -vz` the port |
 | One control WARN, others fine | that probe's command is wrong on real output | run the command by hand over RDP/SSH, compare |
-| `WIN-1.1.5` WARN | `secedit` export path or parsing | run the command manually, adjust the rule |
-| `WIN-17.1` WARN | `auditpol` output format differs by locale | adjust the regex |
-| `LNX-5.4.1` WARN | `pwquality.conf` has no `minlen` | that is a true finding, not a bug |
+| `WIN-PW-COMPLEX` WARN | `secedit` export path or parsing | run the command manually, adjust the rule |
+| `WIN-AUDIT-LOGON` WARN | `auditpol` output format differs by locale | adjust the regex |
+| `LNX-PW-MINLEN` WARN | `pwquality.conf` has no `minlen` | that is a true finding, not a bug |
 | Linux sudo controls WARN | helper not installed or sudoers wrong | re-check step 3 |
 
 **A WARN is the tool working correctly** — it means "I could not verify this,"

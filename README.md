@@ -74,7 +74,7 @@ YAML modeled on Wazuh's SCA schema (`policy` / `requirements` / `checks`), with
 typed sub-rules and a `condition` of `all` / `any` / `none`:
 
 ```yaml
-- id: WIN-18.3.3
+- id: WIN-SMB1
   title: SMBv1 disabled
   level: level1
   scored: scored
@@ -94,40 +94,69 @@ NIST tags follow the ansible-lockdown conversion convention — `NIST800-53R5`
 with a capital R, periods for subsections, underscores for parenthetical
 elements, so `IA-5(1)(a)` becomes `NIST800-53R5_IA-5_1_a`.
 
+## How controls are identified and sourced
+
+**Control IDs are internal identifiers, not benchmark citations.** `WIN-SMB1`
+names the control inside this tool; the benchmark section it implements lives in
+`references`. Those are two different jobs, and conflating them is a trap: CIS
+renumbers between releases — Windows Server 2022 has gone through five major
+benchmark versions since 2022, and RHEL 9 moved its entire file-permissions
+block from `6.1.x` to `7.1.x` between v1 and v2. An ID that doubles as a citation
+is wrong the next time the benchmark ships.
+
+**Every citation is pinned to a version and was checked against the document**, not
+recalled:
+
+- CIS Microsoft Windows Server 2022 Benchmark **v5.1.0**
+- CIS Microsoft Windows Server 2022 STIG Benchmark **v2.0.0**
+- CIS Red Hat Enterprise Linux 9 Benchmark **v2.0.0**
+
+**Four controls have no CIS equivalent and say so** rather than borrowing a
+plausible-looking number. Local Administrators review and Remote Registry are
+organizational controls; BitLocker maps to a section CIS ships unmapped; patch
+recency is an operational metric answering to `NIST SI-2`, not a benchmark item.
+They're real controls worth checking — they're just not CIS's, and the reference
+field states that plainly.
+
+**NIST tags are mapped by control intent**, not lifted from a published CIS→NIST
+crosswalk. The families (`AC`, `AU`, `CM`, `IA`, `SC`, `SI`) match the ones CIS
+uses for the same controls, but treat them as informed mappings rather than
+authoritative ones.
+
 ## Control coverage
 
 ### Windows Server 2022 (scope: member server)
 
-| ID | Control | Level | Scored | Severity | NIST 800-53R5 |
-|---|---|---|---|---|---|
-| `WIN-18.3.3` | SMBv1 disabled | 1 | scored | critical | CM-7 |
-| `WIN-9.1` | Firewall on all profiles | 1 | scored | high | SC-7 |
-| `WIN-2.3.1` | Local Administrators membership | 1 | notscored | high | AC-6 |
-| `WIN-2.3.1.1` | Guest account disabled | 1 | scored | high | AC-2 |
-| `WIN-1.1.1` | Minimum password length (14+) | 1 | scored | high | IA-5_1_a |
-| `WIN-1.1.5` | Password complexity enabled | 1 | scored | high | IA-5_1_a |
-| `WIN-2.3.7.4` | RDP requires NLA | 1 | scored | high | IA-2 |
-| `WIN-17.1` | Audit logging, logon events | 1 | scored | medium | AU-2 |
-| `WIN-18.9.10` | BitLocker on OS volume | 1 | notscored | medium | SC-28 |
-| `WIN-5.1` | Legacy services disabled | 1 | scored | medium | CM-7 |
-| `WIN-18.10.42` | Patch recency (≤ 35 days) | 1 | scored | high | SI-2 |
+| ID | Control | Level | Scored | Severity | NIST 800-53R5 | Benchmark reference |
+|---|---|---|---|---|---|---|
+| `WIN-SMB1` | SMBv1 disabled | 1 | scored | critical | CM-7 | CIS Win2022 v5.1.0 §18.4.3 |
+| `WIN-FIREWALL` | Windows Firewall on all profiles | 1 | scored | high | SC-7 | CIS Win2022 v5.1.0 §9.1.1, §9.2.1, §9.3.1 |
+| `WIN-LOCAL-ADMINS` | Local Administrators membership | 1 | notscored | high | AC-6 | *org-defined* |
+| `WIN-GUEST` | Guest account disabled | 1 | scored | high | AC-2 | CIS Win2022 v5.1.0 §2.3.1.1 |
+| `WIN-PW-MINLEN` | Minimum password length (14+) | 1 | scored | high | IA-5_1_a | CIS Win2022 v5.1.0 §1.1.4 |
+| `WIN-PW-COMPLEX` | Password complexity enabled | 1 | scored | high | IA-5_1_a | CIS Win2022 v5.1.0 §1.1.5 |
+| `WIN-RDP-NLA` | RDP requires Network Level Authentication | 1 | scored | high | IA-2 | CIS Win2022 v5.1.0 §18.10.57.3.9.4 |
+| `WIN-AUDIT-LOGON` | Audit logging for logon events (success and failure) | 1 | scored | medium | AU-2 | CIS Win2022 v5.1.0 §17.5.4 |
+| `WIN-BITLOCKER` | BitLocker enabled on the OS volume | 1 | notscored | medium | SC-28 | *org-defined* |
+| `WIN-LEGACY-SVC` | Legacy services disabled (Telnet, Remote Registry) | 1 | scored | medium | CM-7 | CIS Win2022 STIG v2.0.0 §20.62 (Telnet Client) |
+| `WIN-PATCH-AGE` | Patch recency (last update within 35 days) | 1 | scored | high | SI-2 | *org-defined* |
 
 ### RHEL 9
 
-| ID | Control | Level | Scored | Severity | NIST 800-53R5 |
-|---|---|---|---|---|---|
-| `LNX-5.2.8` | root SSH login disabled | 1 | scored | high | AC-6_2 |
-| `LNX-5.2.9` | SSH password auth disabled | 1 | scored | high | IA-5_2 |
-| `LNX-3.5.1` | Host firewall active | 1 | scored | high | SC-7 |
-| `LNX-6.1.1` | `/etc/passwd` perms ≤ 0644 | 1 | scored | medium | AC-3 |
-| `LNX-6.1.2` | `/etc/shadow` perms ≤ 0640 | 1 | scored | medium | AC-3 |
-| `LNX-6.1.10` | No world-writable files | 2 | scored | medium | AC-3 |
-| `LNX-6.1.13` | SUID/SGID audit | 2 | notscored | medium | CM-7 |
-| `LNX-2.2.1` | Legacy services not installed | 1 | scored | high | CM-7 |
-| `LNX-5.4.1` | Password policy (minlen 14+) | 1 | scored | high | IA-5_1_a |
-| `LNX-5.3.4` | Sudoers audit (no NOPASSWD:ALL) | 1 | scored | high | AC-6_5 |
-| `LNX-4.1.1` | auditd and rsyslog running | 1 | scored | medium | AU-2 |
-| `LNX-1.9` | Patch recency (≤ 35 days) | 1 | scored | high | SI-2 |
+| ID | Control | Level | Scored | Severity | NIST 800-53R5 | Benchmark reference |
+|---|---|---|---|---|---|---|
+| `LNX-SSH-ROOT` | root SSH login disabled | 1 | scored | high | AC-6_2 | CIS RHEL9 v2.0.0 §5.1.20 |
+| `LNX-SSH-PASSAUTH` | SSH password authentication disabled (key-only) | 1 | scored | high | IA-5_2 | CIS RHEL9 v2.0.0 §5.1.22 |
+| `LNX-FIREWALL` | host firewall active | 1 | scored | high | SC-7 | CIS RHEL9 v2.0.0 §4.2 |
+| `LNX-PASSWD-PERMS` | /etc/passwd permissions (<= 0644) | 1 | scored | medium | AC-3 | CIS RHEL9 v2.0.0 §7.1.1 |
+| `LNX-SHADOW-PERMS` | /etc/shadow permissions (<= 0640) | 1 | scored | medium | AC-3 | CIS RHEL9 v2.0.0 §7.1.5 |
+| `LNX-WORLD-WRITE` | No world-writable files | 2 | scored | medium | AC-3 | CIS RHEL9 v2.0.0 §7.1.11 |
+| `LNX-SUID-AUDIT` | SUID/SGID binary audit | 2 | notscored | medium | CM-7 | CIS RHEL9 v2.0.0 §7.1.13 |
+| `LNX-LEGACY-PKGS` | Legacy services not installed (telnet, rsh, ftp) | 1 | scored | high | CM-7 | CIS RHEL9 v2.0.0 §2.1.15 |
+| `LNX-PW-MINLEN` | Password policy (minlen 14+) | 1 | scored | high | IA-5_1_a | CIS RHEL9 v2.0.0 §5.3.3.2.2 |
+| `LNX-SUDO-NOPASSWD` | Sudoers audit (no NOPASSWD:ALL) | 1 | scored | high | AC-6_5 | CIS RHEL9 v2.0.0 §5.2.5 |
+| `LNX-AUDIT-LOG` | auditd and rsyslog running | 1 | scored | medium | AU-2 | CIS RHEL9 v2.0.0 §6.3.1.4 (auditd) |
+| `LNX-PATCH-AGE` | Patch recency (last update within 35 days) | 1 | scored | high | SI-2 | CIS RHEL9 v2.0.0 §1.2.2.1 |
 
 ## Lab setup
 
@@ -239,7 +268,7 @@ output. `exceptions.yml` records those decisions:
 
 ```yaml
 waivers:
-  - check_id: WIN-18.9.10
+  - check_id: WIN-BITLOCKER
     reason: no unattended fix on a running instance; EBS encryption compensates
     owner: a.araia
     ticket: CHG-1042
@@ -270,8 +299,8 @@ queries. A re-scan of the same target automatically prints the delta:
 ```
 [*] compared to previous scan (20260814_023731):
     score: 56% -> 100%  (+44)
-    WIN-18.3.3       SMBv1 disabled            FAIL -> PASS
-    WIN-18.9.10      BitLocker on OS volume    FAIL -> FAIL  (unchanged)
+    WIN-SMB1       SMBv1 disabled            FAIL -> PASS
+    WIN-BITLOCKER      BitLocker on OS volume    FAIL -> FAIL  (unchanged)
 ```
 
 Regressions are listed first and labelled, and a score that moved because

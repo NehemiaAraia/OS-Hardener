@@ -28,7 +28,7 @@
         validate: '/usr/sbin/sshd -t -f %s'
         backup: true
       notify: reload sshd
-      tags: [LNX-5.2.8, ssh]
+      tags: [LNX-SSH-ROOT, ssh]
 
     - name: Disable SSH password authentication
       ansible.builtin.lineinfile:
@@ -38,13 +38,13 @@
         validate: '/usr/sbin/sshd -t -f %s'
         backup: true
       notify: reload sshd
-      tags: [LNX-5.2.9, ssh]
+      tags: [LNX-SSH-PASSAUTH, ssh]
 
     - name: Ensure firewalld is installed
       ansible.builtin.package:
         name: firewalld
         state: present
-      tags: [LNX-3.5.1, firewall]
+      tags: [LNX-FIREWALL, firewall]
 
     # written offline, before the service starts — bringing up a firewall on a
     # host you reach over SSH without first guaranteeing SSH is permitted is how
@@ -54,14 +54,14 @@
       register: fw_ssh
       changed_when: "'ALREADY_ENABLED' not in fw_ssh.stderr"
       failed_when: fw_ssh.rc != 0 and 'ALREADY_ENABLED' not in fw_ssh.stderr
-      tags: [LNX-3.5.1, firewall]
+      tags: [LNX-FIREWALL, firewall]
 
     - name: Enable and start firewalld
       ansible.builtin.service:
         name: firewalld
         state: started
         enabled: true
-      tags: [LNX-3.5.1, firewall]
+      tags: [LNX-FIREWALL, firewall]
 
     - name: Ensure audit and logging daemons are running
       ansible.builtin.service:
@@ -71,7 +71,7 @@
       loop:
         - auditd
         - rsyslog
-      tags: [LNX-4.1.1, logging]
+      tags: [LNX-AUDIT-LOG, logging]
 
     - name: Enforce a minimum password length
       ansible.builtin.lineinfile:
@@ -80,7 +80,7 @@
         line: 'minlen = 14'
         create: true
         mode: '0644'
-      tags: [LNX-5.4.1, password]
+      tags: [LNX-PW-MINLEN, password]
 
     # mode only — deliberately not touching ownership or content, so a
     # misconfigured system is corrected without rewriting account data
@@ -90,7 +90,7 @@
         owner: root
         group: root
         mode: '0644'
-      tags: [LNX-6.1.1, permissions]
+      tags: [LNX-PASSWD-PERMS, permissions]
 
     - name: Correct /etc/shadow permissions
       ansible.builtin.file:
@@ -98,4 +98,4 @@
         owner: root
         group: root
         mode: '0000'
-      tags: [LNX-6.1.2, permissions]
+      tags: [LNX-SHADOW-PERMS, permissions]
