@@ -112,6 +112,25 @@ resource "aws_instance" "windows" {
   key_name               = var.windows_key_name
   vpc_security_group_ids = [aws_security_group.lab.id]
 
+  # Brings up the encrypted WinRM listener at first boot so the host can be
+  # bootstrapped remotely instead of through an interactive RDP session. It
+  # configures transport only — the least-privilege service account is still
+  # created by scripts/bootstrap_windows.ps1, run afterwards over this channel.
+  user_data = <<-EOF
+    <powershell>
+    $ErrorActionPreference = "Stop"
+    $cert = New-SelfSignedCertificate -DnsName $env:COMPUTERNAME -CertStoreLocation Cert:\LocalMachine\My
+    New-Item -Path WSMan:\localhost\Listener -Transport HTTPS -Address * `
+        -CertificateThumbPrint $cert.Thumbprint -Force
+    # cleartext management traffic is never enabled, not even briefly
+    Set-Item -Path WSMan:\localhost\Service\AllowUnencrypted -Value $false
+    Set-Item -Path WSMan:\localhost\Service\Auth\Basic -Value $false
+    New-NetFirewallRule -DisplayName "WinRM HTTPS" -Direction Inbound `
+        -LocalPort 5986 -Protocol TCP -Action Allow
+    cmd.exe /c 'winrm delete winrm/config/Listener?Address=*+Transport=HTTP' 2>$null
+    </powershell>
+  EOF
+
   metadata_options {
     http_tokens = "required" # IMDSv2 only
   }
