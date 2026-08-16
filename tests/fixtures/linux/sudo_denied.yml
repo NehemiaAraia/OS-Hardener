@@ -1,4 +1,4 @@
-cat /etc/ssh/sshd_config 2>/dev/null:
+sudo -n /usr/local/sbin/hardening-scan-helper sshd-config:
   exit_status: 0
   stdout: 'PermitRootLogin no
 

@@ -1,19 +1,10 @@
-cat /etc/ssh/sshd_config 2>/dev/null:
-  exit_status: 0
-  stdout: 'PermitRootLogin no
-
-    PasswordAuthentication no
-
-    Port 22
-
-    '
 echo $(( ( $(date +%s) - $(rpm -qa --qf '%{INSTALLTIME}\n' | sort -n | tail -1) ) / 86400 )):
   exit_status: 0
   stdout: '3'
 grep -E '^\s*minlen' /etc/security/pwquality.conf 2>/dev/null | awk -F= '{print $2}' | tr -d ' ':
   exit_status: 0
   stdout: '14'
-rpm -qa | grep -Ec '^(telnet-server|rsh-server|vsftpd)-':
+rpm -qa | grep -Ec '^(telnet-server|rsh-server|vsftpd)-' || true:
   exit_status: 0
   stdout: '0'
 stat -c '%a' /etc/passwd:
@@ -22,6 +13,15 @@ stat -c '%a' /etc/passwd:
 stat -c '%a' /etc/shadow:
   exit_status: 0
   stdout: '0'
+sudo -n /usr/local/sbin/hardening-scan-helper sshd-config:
+  exit_status: 0
+  stdout: 'PermitRootLogin no
+
+    PasswordAuthentication no
+
+    Port 22
+
+    '
 sudo -n /usr/local/sbin/hardening-scan-helper sudoers:
   exit_status: 0
   stdout: '0'
