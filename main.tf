@@ -23,7 +23,14 @@ variable "my_ip" {
 }
 
 variable "key_name" {
-  description = "Existing EC2 key pair name, used for SSH to RHEL and to decrypt the Windows admin password."
+  description = "Existing EC2 key pair for SSH to RHEL. ED25519 is fine here."
+  type        = string
+}
+
+# Windows AMIs reject ED25519 key pairs outright, and the admin password is
+# RSA-encrypted, so this host needs its own RSA pair rather than sharing one.
+variable "windows_key_name" {
+  description = "Existing RSA EC2 key pair, used to decrypt the Windows admin password."
   type        = string
 }
 
@@ -102,7 +109,7 @@ resource "aws_security_group" "lab" {
 resource "aws_instance" "windows" {
   ami                    = data.aws_ami.windows_2022.id
   instance_type          = var.instance_type
-  key_name               = var.key_name
+  key_name               = var.windows_key_name
   vpc_security_group_ids = [aws_security_group.lab.id]
 
   metadata_options {
