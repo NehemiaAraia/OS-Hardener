@@ -64,10 +64,13 @@ def test_windows_hardened_statuses():
     assert summary["score"] == 100
 
 
-def test_absent_service_counts_as_not_running():
+def test_legacy_services_detected_via_registry_not_get_service():
+    """A non-admin Get-Service returns nothing for a service it cannot see,
+    which is indistinguishable from the service being absent — that reported a
+    running Remote Registry as compliant. The Start value is readable instead."""
     r, _ = scan("windows", "baseline")
-    telnet = r["WIN-5.1"].evidence[0]
-    assert telnet.satisfied is True  # empty output = service not installed
+    assert r["WIN-5.1"].status is Status.FAIL
+    assert "Services" in r["WIN-5.1"].evidence[0].subrule
 
 
 def test_notscored_control_stays_out_of_the_score():
@@ -198,3 +201,13 @@ def test_score_carries_coverage():
     _, full = scan("linux", "hardened")
     assert denied["score"] == 100 and denied["coverage"] < 30
     assert full["score"] == 100 and full["coverage"] == 100
+
+
+def test_empty_output_is_never_a_verdict():
+    """A pattern can be neither present nor absent in output that was never
+    produced — most often the probe lacked privilege to read what it asked for.
+    This reported 'auditpol requires admin' as a failing audit policy."""
+    empty_clean = CommandOutput(stdout="", exit_status=0, ok=True)
+    assert _match("regex:Success and Failure", empty_clean) is None
+    assert _match("notregex:NOPASSWD", empty_clean) is None
+    assert _match("equals:1", empty_clean) is None

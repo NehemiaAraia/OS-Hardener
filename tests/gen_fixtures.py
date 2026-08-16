@@ -33,8 +33,7 @@ SCENARIOS = {
         ("WIN-2.3.7.4", 0): ("1", 0),                       # NLA on -> PASS
         ("WIN-17.1", 0): ("  Logon                    Success", 0),  # no failure auditing -> FAIL
         ("WIN-18.9.10", 0): ("Off", 0),                     # notscored -> FAIL, no auto-fix
-        ("WIN-5.1", 0): ("", 0),                            # telnet absent -> ok
-        ("WIN-5.1", 1): ("Running", 0),                     # RemoteRegistry up -> FAIL
+        ("WIN-5.1", 0): ("1", 0),                           # 1 legacy service enabled -> FAIL
         ("WIN-18.10.42", 0): ("12", 0),                     # patched 12d ago -> PASS
     },
     # after remediation
@@ -48,8 +47,7 @@ SCENARIOS = {
         ("WIN-2.3.7.4", 0): ("1", 0),
         ("WIN-17.1", 0): ("  Logon                    Success and Failure", 0),
         ("WIN-18.9.10", 0): ("Off", 0),                     # unchanged, still manual
-        ("WIN-5.1", 0): ("", 0),
-        ("WIN-5.1", 1): ("Stopped", 0),
+        ("WIN-5.1", 0): ("0", 0),
         ("WIN-18.10.42", 0): ("12", 0),
     },
     # stock RHEL 9 AMI, pre-hardening

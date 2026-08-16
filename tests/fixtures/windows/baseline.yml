@@ -8,12 +8,6 @@
 (Get-LocalUser -Name 'Guest').Enabled:
   exit_status: 0
   stdout: 'False'
-(Get-Service -Name 'RemoteRegistry' -ErrorAction SilentlyContinue).Status:
-  exit_status: 0
-  stdout: Running
-(Get-Service -Name 'TlntSvr' -ErrorAction SilentlyContinue).Status:
-  exit_status: 0
-  stdout: ''
 (auditpol /get /subcategory:'Logon' | Select-String '  Logon').Line:
   exit_status: 0
   stdout: '  Logon                    Success'
@@ -26,6 +20,11 @@
   | Select-Object -ExpandProperty Count'
 : exit_status: 0
   stdout: '0'
+? '@(''TlntSvr'',''RemoteRegistry'') | Where-Object { $p = ''HKLM:\SYSTEM\CurrentControlSet\Services\''
+  + $_; (Test-Path $p) -and ((Get-ItemProperty $p -Name Start -EA SilentlyContinue).Start
+  -ne 4) } | Measure-Object | Select-Object -ExpandProperty Count'
+: exit_status: 0
+  stdout: '1'
 ? Get-ItemPropertyValue -Path 'HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp'
   -Name 'UserAuthentication'
 : exit_status: 0

@@ -35,6 +35,13 @@ def _match(matcher: str, out: CommandOutput) -> Optional[bool]:
     if not ran_clean and not text:
         return None
 
+    # No output at all means nothing was observed. Calling that a definite
+    # verdict invents a result: a pattern can be neither present nor absent in
+    # output that was never produced. Most often it means the probe lacked the
+    # privilege to read what it was asked about.
+    if kind in ("equals", "eq", "regex", "match", "notregex") and not text:
+        return None
+
     if kind in ("equals", "eq"):
         return ran_clean and text == arg
     if kind in ("regex", "match"):
