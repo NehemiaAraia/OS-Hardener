@@ -1,9 +1,5 @@
-"""Compare a scan against the previous scan of the same target.
-
-This is what turns a static report into evidence that remediation worked, so it
-reports honestly in both directions: controls that regressed are listed the same
-as controls that improved, and a score that moved only because coverage changed
-is called out rather than presented as a real gain."""
+"""Compare a scan against the previous one for the same host. Regressions are
+reported the same as improvements."""
 from __future__ import annotations
 
 from dataclasses import dataclass

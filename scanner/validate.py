@@ -12,9 +12,7 @@ def valid_host(host: str) -> bool:
 
 
 def check_host(host: str) -> str:
-    """Reject anything that isn't a plain host. A comma matters more than it
-    looks: Ansible's inline inventory is '<host>,' so an unchecked comma would
-    quietly extend remediation to machines that were never named."""
+    """Ansible's inline inventory is '<host>,' so a stray comma would add hosts."""
     if not valid_host(host):
         raise ValueError(
             f"invalid host {host!r} — expected a hostname or IP with no separators"

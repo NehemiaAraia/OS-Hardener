@@ -1,9 +1,5 @@
-"""Remediation model and the safety rails around applying fixes.
-
-Dry-run is the default everywhere: applying requires both an explicit --apply and
-an interactive confirmation. Controls with no safe unattended fix are declared
-as such rather than being quietly skipped, and reboots are flagged, never forced.
-"""
+"""Remediation model. Dry-run is the default; applying needs --apply plus an
+interactive confirmation."""
 from __future__ import annotations
 
 import logging
@@ -35,15 +31,12 @@ class FixOutcome:
 
 @dataclass
 class RemediationPlan:
-    """Fixes for the controls a scan actually found failing — never a blanket
-    'apply everything', which would touch controls that already pass."""
+    """Fixes for the controls a scan found failing, not a blanket apply."""
     target: str
     host: str
     fixes: list[Fix] = field(default_factory=list)
     skipped: list[Fix] = field(default_factory=list)
-    # failing controls with no entry in the catalog at all. Reported explicitly:
-    # dropping them silently would let a 3-FAIL scan produce a 2-item plan with
-    # no explanation, which is a lie by omission.
+    # failing controls with no catalog entry, reported rather than dropped
     no_fix_defined: list[tuple[str, str]] = field(default_factory=list)
 
     @property
@@ -54,17 +47,13 @@ class RemediationPlan:
 def build_plan(
     results: list[CheckResult], catalog: dict[str, Fix], target: str, host: str
 ) -> RemediationPlan:
-    """Only FAILing controls are remediated. WARN means the control was never
-    verified, and acting on an unverified finding is how a hardening tool breaks
-    a production box."""
+    """Only FAILs are remediated; a WARN was never verified."""
     plan = RemediationPlan(target=target, host=host)
     for r in results:
         if r.status is not Status.FAIL:
             continue
         if r.waived:
-            # someone accepted this risk on the record; silently "fixing" it
-            # would overrule that decision
-            continue
+            continue  # accepted risk; fixing it would overrule that
         fix = catalog.get(r.check.id)
         if fix is None:
             plan.no_fix_defined.append((r.check.id, r.check.title))
@@ -74,8 +63,7 @@ def build_plan(
 
 
 def _logger(log_path: str | Path) -> logging.Logger:
-    # keyed by path: a single cached logger would pin the first path it ever saw
-    # and silently send later runs' audit trail to the wrong file
+    # keyed by path so a second run doesn't log to the first run's file
     path = Path(log_path)
     log = logging.getLogger(f"remediation.{path}")
     if not log.handlers:
@@ -89,15 +77,12 @@ def _logger(log_path: str | Path) -> logging.Logger:
 
 
 def confirm(host: str, count: int, stream=None) -> bool:
-    """Explicit y/N confirmation. Anything other than 'y' declines, and a
-    non-interactive session declines rather than assuming consent."""
+    """Anything but 'y' declines; non-interactive sessions decline."""
     import sys
 
     opened = None
     if stream is None:
-        # read the answer from the terminal rather than stdin: pasting a
-        # multi-line block leaves its trailing newline in stdin, which would be
-        # consumed here as a silent "no" before the operator ever sees the prompt
+        # read from the terminal: a pasted newline in stdin would answer this
         try:
             opened = open("/dev/tty")
             stream = opened
@@ -125,8 +110,7 @@ def execute(
     apply: bool,
     log_path: str | Path = ACTION_LOG,
 ) -> list[FixOutcome]:
-    """Walk the plan. `runner` performs one fix and returns (ok, detail); it is
-    only ever called when apply is True."""
+    """Walk the plan; runner is only called when apply is True."""
     log = _logger(log_path)
     started = datetime.now(timezone.utc).isoformat()
     mode = "APPLY" if apply else "DRY-RUN"

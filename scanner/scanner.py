@@ -73,8 +73,7 @@ def run_scan(
     policies = load_policies(rules_dir, platform)
     checks = [c for pol in policies for c in pol.checks]
 
-    # collect every probe up front so backends that can batch (WinRM) pay one
-    # round trip instead of one per sub-rule
+    # gather probes first so backends that can batch only pay one round trip
     probes = []
     for check in checks:
         for sub in check.rules:
@@ -88,9 +87,7 @@ def run_scan(
     for i, check in enumerate(checks, 1):
         result = evaluate(check, platform, conn)
         results.append(result)
-        # reported as each control finishes rather than in a batch at the end:
-        # a WinRM probe spawns a PowerShell process per check, so a full scan is
-        # tens of seconds and a silent terminal looks like a hang
+        # report as we go; a silent terminal looks like a hang
         if on_result:
             on_result(i, len(checks), result)
 

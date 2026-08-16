@@ -19,8 +19,7 @@ def probe_command(sub: SubRule, platform: str) -> str:
     t = sub.type
     if t == "cmd":
         return sub.target
-    # targets come from rule files, which are trusted like code — but quoting them
-    # properly costs nothing and keeps a typo'd rule from becoming a shell escape
+    # quote targets so a typo in a rule file can't escape the shell
     if platform == "windows":
         if t == "r":
             path = sub.target.replace("HKLM\\", "HKLM:\\").replace("HKCU\\", "HKCU:\\")

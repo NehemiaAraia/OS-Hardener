@@ -178,7 +178,7 @@ python main.py scan --target windows --host <windows-ip> --insecure
 ```
 
 **Expect** the delta block comparing against the previous scan. This is the
-demo's strongest moment — check it renders before recording.
+clearest evidence the remediation worked.
 
 ```bash
 export DASHBOARD_USER=admin DASHBOARD_PASS='<pick one>'
@@ -187,13 +187,10 @@ python dashboard.py            # https://127.0.0.1:8443
 
 ---
 
-## 7. Before recording
+## 7. Resetting for another run
 
 - [ ] Both instances running, RDP and SSH already connected
-- [ ] One full unrecorded practice run
 - [ ] Reset to a failing baseline so the before/after is real, not a replay
-- [ ] `reports/` cleared of noise from debugging
-- [ ] Terminal font large enough to read when shared small
 
 **Resetting to a failing baseline** (so remediation has something to fix). These
 scripts deliberately weaken the host and refuse to run without an explicit
@@ -210,9 +207,7 @@ sudo I_UNDERSTAND_THIS_WEAKENS_THIS_HOST=yes ./scripts/lab_reset_linux.sh
 The Linux script leaves password authentication **on** so your key login keeps
 working while the control fails again, and the Windows script leaves the
 firewall **enabled** — turning it off on an instance you reach over the network
-is how you lose access mid-demo.
-
-The full shot-by-shot recording script is in [DEMO.md](DEMO.md).
+is how you lose access to the host.
 
 ---
 

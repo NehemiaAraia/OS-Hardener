@@ -10,18 +10,13 @@ class WinRMConnection(Connection):
     """WinRM over HTTPS/5986. Credentials come from the caller (env vars),
     never hardcoded.
 
-    Holds one remote shell open for the whole scan. pywinrm's Session helper
-    opens and tears down a shell per command, which costs roughly three round
-    trips each — across a full rule set that tripled the scan time for no
-    benefit.
+    Holds one remote shell open for the whole scan.
     """
 
     def __init__(self, host, username, password, port=5986, ca_trust_path=None, insecure=False):
         from winrm.protocol import Protocol
 
-        # validation stays on unless explicitly waived — defaulting to 'ignore'
-        # would put NTLM credentials on a channel anyone can intercept, which is
-        # exactly the weakness this tool reports on
+        # validation stays on unless explicitly waived
         if insecure:
             validation = "ignore"
             print(
@@ -43,8 +38,7 @@ class WinRMConnection(Connection):
         self._shell_id = self._protocol.open_shell()
         self._cache: dict[str, CommandOutput] = {}
 
-    # each probe is base64'd so no quoting from the rule files can break the
-    # wrapper, and batches stay small enough for WinRM's command-line limit
+    # base64 per probe so rule-file quoting can't break the wrapper
     BATCH = 5
 
     def prefetch(self, commands) -> None:
@@ -115,12 +109,8 @@ class WinRMConnection(Connection):
 
 
 def _parse_batch(text: str, commands) -> dict:
-    """Split a batched run back into per-probe results.
-
-    A probe missing from the output is simply left out, so it falls through to
-    an individual run rather than being recorded as empty — an absent result
-    must never look like a clean one.
-    """
+    """Split a batched run into per-probe results; a missing probe is left out
+    so it falls back to an individual run."""
     import re
 
     results = {}

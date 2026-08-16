@@ -1,20 +1,5 @@
-"""Documented risk acceptance for controls that will not be fixed.
-
-Without this a compliance tool produces alert fatigue: the same known-and-accepted
-finding shouts on every run until people stop reading the output entirely.
-
-The rules that keep a waiver from becoming a way to hide problems:
-
-- **Expiry is mandatory.** A waiver with no end date is how a compliance posture
-  rots quietly. An expired waiver simply stops applying.
-- **Only a FAIL can be waived.** Waiving a WARN would mean accepting a risk
-  nobody has measured — the control was never verified, so there is nothing to
-  accept.
-- **A waived finding is still reported.** It leaves the score's denominator, but
-  it never disappears from the output.
-- **Every waiver names an owner and a reason.** An anonymous exception is
-  indistinguishable from a bug.
-"""
+"""Documented risk acceptance. Expiry is mandatory, only a FAIL can be waived,
+and a waived finding still appears in the report."""
 from __future__ import annotations
 
 from dataclasses import dataclass

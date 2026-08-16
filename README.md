@@ -45,10 +45,9 @@ Controls with no safe unattended fix (BitLocker on a running instance) are
 `notscored`, mirroring CIS's own model.
 
 **Elevation fails closed.** Controls needing root (`/etc/sudoers`, a full-filesystem
-find) run through a root-owned helper granted via three fixed sudo verbs. The
-helper prints nothing when it can't run, which reports WARN — an earlier version
-piped through `wc -l`, so a permission error produced `0` and the sudoers audit
-could never fail.
+find) run through a root-owned helper granted via four fixed sudo verbs. The
+helper prints nothing when it can't run, so a permission error reports WARN
+rather than a fabricated zero.
 
 **Host-side date math.** Patch recency is computed on the target and returned as
 an integer age, so results don't depend on the scanner's clock and recorded test
@@ -56,7 +55,7 @@ fixtures don't rot.
 
 **Least privilege on the tool itself.** The scanner authenticates as
 `svc-hardening-scanner` — on Windows a member of Remote Management Users, not
-Administrators; on Linux an account granted sudo on three fixed helper verbs and
+Administrators; on Linux an account granted sudo on four fixed helper verbs and
 nothing else, no `NOPASSWD: ALL`. The sudoers entries carry no wildcards on
 purpose: a wildcarded `sudo find` entry accepts `-exec`, which hands out a root
 shell and undoes the whole point. Credentials come from environment variables,
@@ -320,7 +319,8 @@ renders inert.
 
 ## Status
 
-Tier 1 and Tier 2 complete: scanning, scoring, reporting, IAM, infra, SQLite
-history, before/after delta, Windows and Linux remediation, dashboard.
-Tier 3 (roadmap): CI with lint + Bandit, AWS SSM as a connection backend,
-Windows remediation via `ansible.windows`, suppression/waiver file.
+Verified end to end against live AWS instances — Windows Server 2022 over WinRM
+and RHEL 9 over SSH — for scanning, remediation, and the before/after delta.
+
+Roadmap: multi-host scanning from an inventory, drift detection across stored
+scans, AWS SSM as a connection backend, and findings export to a SIEM.

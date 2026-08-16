@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT))
 from scanner import delta as delta_mod  # noqa: E402
 from scanner.connection import make_connection  # noqa: E402
 from scanner.model import Status  # noqa: E402
+from scanner.remediation import ansible_runner  # noqa: E402
 from scanner.remediation import base as rem  # noqa: E402
 from scanner.remediation import linux as rem_linux  # noqa: E402
 from scanner.remediation import windows as rem_win  # noqa: E402
@@ -197,14 +198,14 @@ def test_windows_credentials_are_not_written_to_disk():
 
 
 def test_playbook_missing_ansible_is_reported(monkeypatch):
-    monkeypatch.setattr(rem_linux.shutil, "which", lambda _: None)
-    ok, detail = rem_linux.run_playbook("h", "u", "k", ["LNX-SSH-ROOT"], check=True)
+    monkeypatch.setattr(ansible_runner.shutil, "which", lambda _: None)
+    ok, detail = ansible_runner.run_playbook("linux", "h", "u", "k", ["LNX-SSH-ROOT"], check=True)
     assert ok is False and "ansible-playbook" in detail
 
 
 def test_playbook_refuses_empty_tag_set():
     """An empty tag list would run every task in the playbook."""
-    ok, detail = rem_linux.run_playbook("h", "u", "k", [], check=True)
+    ok, detail = ansible_runner.run_playbook("linux", "h", "u", "k", [], check=True)
     assert ok is False and "no tags" in detail
 
 
@@ -233,8 +234,8 @@ def test_host_validation_rejects_inventory_injection():
 
 
 def test_playbook_refuses_a_host_with_a_comma():
-    ok, detail = rem_linux.run_playbook(
-        "10.0.0.5,10.0.0.99", "u", "k", ["LNX-SSH-ROOT"], check=True
+    ok, detail = ansible_runner.run_playbook(
+        "linux", "10.0.0.5,10.0.0.99", "u", "k", ["LNX-SSH-ROOT"], check=True
     )
     assert ok is False and "invalid host" in detail
 

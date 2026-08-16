@@ -1,7 +1,7 @@
 # LAB ONLY — this WEAKENS the machine it runs on.
 #
 # A fresh Windows Server 2022 AMI already passes several controls, so a
-# before/after demo has nothing to show. This reverts a handful of settings to a
+# before/after run has nothing to fix. This reverts a handful of settings to a
 # realistic unhardened state so remediation has real work to do.
 #
 # This must never run anywhere but a throwaway lab instance. It refuses unless
@@ -23,8 +23,8 @@ if (-not $IUnderstandThisWeakensThisHost) {
     Write-Host @"
 refusing to run.
 
-This script deliberately weakens security settings so the hardening demo has
-failing controls to fix. It is only appropriate on a disposable lab VM.
+This script deliberately weakens security settings so there are failing controls
+to test remediation against. It is only appropriate on a disposable lab VM.
 
 To proceed:
   .\lab_reset_windows.ps1 -IUnderstandThisWeakensThisHost
@@ -36,14 +36,14 @@ Write-Host "host: $env:COMPUTERNAME"
 if ($ConfirmHostname) {
     $answer = $ConfirmHostname
 } else {
-    $answer = Read-Host "weaken THIS host for a hardening demo? type the hostname to confirm"
+    $answer = Read-Host "weaken THIS host for testing? type the hostname to confirm"
 }
 if ($answer -ne $env:COMPUTERNAME) {
     Write-Host "hostname did not match, aborting" -ForegroundColor Red
     exit 1
 }
 
-Write-Host "[*] enabling SMBv1 (this is the point of the demo)..."
+Write-Host "[*] enabling SMBv1..."
 # -NoRestart: the scanner reports the reboot requirement rather than forcing it
 Enable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart -ErrorAction SilentlyContinue | Out-Null
 New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters" `

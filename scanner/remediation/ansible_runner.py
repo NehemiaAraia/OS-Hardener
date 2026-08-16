@@ -1,10 +1,5 @@
-"""Invoke ansible-playbook for either platform.
-
-Remediation runs through Ansible on both Windows and Linux: idempotency,
-check-mode and inventory handling are already solved there, so Python keeps
-detection and reporting and Ansible owns the changes. Only the connection
-variables differ per platform.
-"""
+"""Invoke ansible-playbook for either platform; only the connection variables
+differ."""
 from __future__ import annotations
 
 import os

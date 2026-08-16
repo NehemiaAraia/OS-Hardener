@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # LAB ONLY — this WEAKENS the machine it runs on.
 #
-# A fresh RHEL AMI already passes several controls, so a before/after demo has
-# nothing to show. This reverts a handful of settings to a realistic unhardened
+# A fresh RHEL AMI already passes several controls, so a before/after run has
+# nothing to fix. This reverts a handful of settings to a realistic unhardened
 # state so remediation has real work to do.
 #
 # This must never run anywhere but a throwaway lab instance. It refuses unless
@@ -16,8 +16,8 @@ if [[ "${I_UNDERSTAND_THIS_WEAKENS_THIS_HOST:-}" != "yes" ]]; then
     cat >&2 <<'EOF'
 refusing to run.
 
-This script deliberately weakens security settings so the hardening demo has
-failing controls to fix. It is only appropriate on a disposable lab VM.
+This script deliberately weakens security settings so there are failing controls
+to test remediation against. It is only appropriate on a disposable lab VM.
 
 To proceed:
   sudo I_UNDERSTAND_THIS_WEAKENS_THIS_HOST=yes ./lab_reset_linux.sh
@@ -37,14 +37,13 @@ if [[ ! -f /sys/hypervisor/uuid && ! -d /sys/class/dmi/id ]]; then
 fi
 
 echo "host: $(hostname)  ($(hostname -I 2>/dev/null | awk '{print $1}'))"
-read -rp "weaken THIS host for a hardening demo? type the hostname to confirm: " answer
+read -rp "weaken THIS host for testing? type the hostname to confirm: " answer
 if [[ "$answer" != "$(hostname)" ]]; then
     echo "hostname did not match, aborting" >&2
     exit 1
 fi
 
-# --fixable-only reverts just the controls remediation can repair, so a demo
-# ends cleanly instead of trailing failures the tool was never going to fix
+# --fixable-only reverts only what remediation can repair
 FIXABLE_ONLY=0
 [[ "${2:-}" == "--fixable-only" || "${1:-}" == "--fixable-only" ]] && FIXABLE_ONLY=1
 

@@ -14,16 +14,14 @@ def summarize(results: list[CheckResult]) -> dict:
         counts[r.status.value] += 1
 
     waived = [r for r in results if r.waived]
-    # a waived finding is accepted risk, so it leaves the denominator — but it is
-    # counted and displayed, never dropped
+    # waived findings leave the denominator but stay in the output
     defined = [r for r in results if r.check.scored == "scored" and not r.waived]
     scored = [r for r in defined if r.status in (Status.PASS, Status.FAIL)]
     denom = len(scored)
     passed = sum(1 for r in scored if r.status is Status.PASS)
     score = round(100 * passed / denom) if denom else 0
 
-    # a score computed from two of eleven controls is not the same claim as one
-    # computed from all eleven, so coverage travels with it everywhere
+    # a score means little without knowing how much was verified
     coverage = round(100 * denom / len(defined)) if defined else 0
 
     return {

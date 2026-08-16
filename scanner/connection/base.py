@@ -11,21 +11,14 @@ class CommandOutput:
 
 
 class Connection:
-    """Backend interface. `ok=False` is reserved for 'could not execute' —
-    a command that ran and simply found nothing returns ok=True with a
-    non-zero exit_status. The evaluator relies on that distinction to tell
-    'unreachable' (-> WARN) apart from 'absent' (a real signal)."""
+    """ok=False means the command could not run at all; a command that ran and
+    found nothing returns ok=True with a non-zero exit status."""
 
     def run(self, command: str) -> CommandOutput:
         raise NotImplementedError
 
     def prefetch(self, commands) -> None:
-        """Optionally collect several probes in one round trip.
-
-        Backends where a round trip is cheap can ignore this; WinRM overrides it
-        because each probe otherwise spawns its own PowerShell process on the
-        target, which dominates scan time. Results are cached and served by run().
-        """
+        """Optionally collect several probes in one round trip."""
         return None
 
     def close(self) -> None:
