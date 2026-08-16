@@ -59,18 +59,30 @@ sshd -t && systemctl reload sshd
 echo "[*] stopping the firewall..."
 systemctl disable --now firewalld 2>/dev/null || true
 
+echo "[*] stopping rsyslog (auditd left running so the 'all' condition still has a passing half)..."
+systemctl disable --now rsyslog 2>/dev/null || true
+
+echo "[*] weakening the password policy to minlen 8..."
+if grep -qE '^\s*#?\s*minlen' /etc/security/pwquality.conf 2>/dev/null; then
+    sed -i 's/^\s*#\?\s*minlen.*/minlen = 8/' /etc/security/pwquality.conf
+else
+    echo 'minlen = 8' >> /etc/security/pwquality.conf
+fi
+
+# world-readable password hashes — the single most obviously wrong thing on the
+# box, and a good one to point at on screen
+echo "[*] loosening /etc/passwd and /etc/shadow permissions..."
+chmod 0666 /etc/passwd
+chmod 0644 /etc/shadow
+
 if [[ $FIXABLE_ONLY -eq 0 ]]; then
-    echo "[*] creating a world-writable file..."
+    # no remediation exists for this one on purpose — a blanket 'chmod -R o-w'
+    # across a filesystem is the reckless move, so the tool reports it instead
+    echo "[*] creating a world-writable file (no auto-fix exists for this)..."
     install -d -m 0755 /opt/lab
     touch /opt/lab/scratch.sh && chmod 0666 /opt/lab/scratch.sh
-
-    echo "[*] stopping rsyslog..."
-    systemctl disable --now rsyslog 2>/dev/null || true
-
-    echo "[*] clearing the password policy..."
-    sed -i '/^\s*minlen/d' /etc/security/pwquality.conf 2>/dev/null || true
 else
-    echo "[*] --fixable-only: leaving rsyslog, file permissions and password policy alone"
+    echo "[*] --fixable-only: skipping the world-writable file, which has no automated fix"
 fi
 
 cat <<'EOF'

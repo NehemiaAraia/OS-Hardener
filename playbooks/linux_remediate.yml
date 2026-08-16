@@ -62,3 +62,40 @@
         state: started
         enabled: true
       tags: [LNX-3.5.1, firewall]
+
+    - name: Ensure audit and logging daemons are running
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - auditd
+        - rsyslog
+      tags: [LNX-4.1.1, logging]
+
+    - name: Enforce a minimum password length
+      ansible.builtin.lineinfile:
+        path: /etc/security/pwquality.conf
+        regexp: '^\s*#?\s*minlen\s*='
+        line: 'minlen = 14'
+        create: true
+        mode: '0644'
+      tags: [LNX-5.4.1, password]
+
+    # mode only — deliberately not touching ownership or content, so a
+    # misconfigured system is corrected without rewriting account data
+    - name: Correct /etc/passwd permissions
+      ansible.builtin.file:
+        path: /etc/passwd
+        owner: root
+        group: root
+        mode: '0644'
+      tags: [LNX-6.1.1, permissions]
+
+    - name: Correct /etc/shadow permissions
+      ansible.builtin.file:
+        path: /etc/shadow
+        owner: root
+        group: root
+        mode: '0000'
+      tags: [LNX-6.1.2, permissions]

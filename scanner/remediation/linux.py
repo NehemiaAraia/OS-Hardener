@@ -33,6 +33,29 @@ CATALOG = {
         title="host firewall active",
         command="ansible tag LNX-3.5.1 (install + enable firewalld)",
     ),
+    "LNX-4.1.1": Fix(
+        check_id="LNX-4.1.1",
+        title="auditd and rsyslog running",
+        command="ansible tag LNX-4.1.1 (enable + start auditd and rsyslog)",
+    ),
+    "LNX-5.4.1": Fix(
+        check_id="LNX-5.4.1",
+        title="password policy (minlen 14+)",
+        command="ansible tag LNX-5.4.1 (set minlen = 14 in pwquality.conf)",
+    ),
+    "LNX-6.1.1": Fix(
+        check_id="LNX-6.1.1",
+        title="/etc/passwd permissions",
+        command="ansible tag LNX-6.1.1 (chmod 0644 root:root)",
+    ),
+    "LNX-6.1.2": Fix(
+        check_id="LNX-6.1.2",
+        title="/etc/shadow permissions",
+        command="ansible tag LNX-6.1.2 (chmod 0000 root:root)",
+    ),
+    # LNX-5.3.4 (sudoers NOPASSWD:ALL) is deliberately absent. Removing the
+    # admin account's passwordless sudo is the change most likely to lock an
+    # operator out of the machine being hardened, so it stays a reported finding.
 }
 
 
