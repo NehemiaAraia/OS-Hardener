@@ -19,7 +19,7 @@ checks:
     references:
       - CIS 5.2.8
     rules:
-      - "f:/etc/ssh/sshd_config -> regex:^\\s*PermitRootLogin\\s+no\\b"
+      - "cmd:sudo -n /usr/local/sbin/hardening-scan-helper sshd-config -> regex:^\\s*PermitRootLogin\\s+no\\b"
 
   - id: LNX-5.2.9
     title: SSH password authentication disabled (key-only)
@@ -33,7 +33,7 @@ checks:
     references:
       - CIS 5.2.9
     rules:
-      - "f:/etc/ssh/sshd_config -> regex:^\\s*PasswordAuthentication\\s+no\\b"
+      - "cmd:sudo -n /usr/local/sbin/hardening-scan-helper sshd-config -> regex:^\\s*PasswordAuthentication\\s+no\\b"
 
   - id: LNX-3.5.1
     title: host firewall active
@@ -121,11 +121,15 @@ checks:
     severity: high
     nist: NIST800-53R5_CM-7
     condition: all
+    description: >
+      'grep -c' exits non-zero when it matches nothing, even though 0 is the
+      correct answer — '|| true' keeps a compliant host from looking like a
+      failed probe.
     remediation: dnf remove telnet-server rsh-server vsftpd
     references:
       - CIS 2.2.1
     rules:
-      - "cmd:rpm -qa | grep -Ec '^(telnet-server|rsh-server|vsftpd)-' -> equals:0"
+      - "cmd:rpm -qa | grep -Ec '^(telnet-server|rsh-server|vsftpd)-' || true -> equals:0"
 
   - id: LNX-5.4.1
     title: Password policy (minlen 14+)

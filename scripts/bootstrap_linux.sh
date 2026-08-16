@@ -30,7 +30,8 @@ install -m 0755 -o root -g root "$(dirname "$0")/hardening_scan_helper.sh" "$HEL
 cat > "/etc/sudoers.d/$ACCOUNT" <<EOF
 Cmnd_Alias SCAN_READ = $HELPER world-writable, \\
                        $HELPER suid, \\
-                       $HELPER sudoers
+                       $HELPER sudoers, \\
+                       $HELPER sshd-config
 
 $ACCOUNT ALL=(root) NOPASSWD: SCAN_READ
 EOF

@@ -18,6 +18,11 @@ case "${1:-}" in
     sudoers)
         grep -rhE '^[^#]*NOPASSWD:[[:space:]]*ALL' /etc/sudoers /etc/sudoers.d/ 2>/dev/null | wc -l
         ;;
+    sshd-config)
+        # 0600 on RHEL 9, so an unprivileged read fails and the SSH controls
+        # would report unverified
+        cat /etc/ssh/sshd_config
+        ;;
     *)
         echo "usage: $(basename "$0") world-writable|suid|sudoers" >&2
         exit 2
