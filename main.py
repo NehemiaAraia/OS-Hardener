@@ -74,20 +74,11 @@ def cmd_scan(args) -> int:
     for problem in loaded.problems:
         print(f"[!] waiver rejected — {problem}", file=sys.stderr)
 
-    conn = _open_connection(target, args)
-    try:
-        results, summary, notes = run_scan(
-            target, conn, RULES_DIR, waiver_list=loaded.waivers, host=host
-        )
-    finally:
-        conn.close()
+    print(f"[*] loaded rules from {RULES_DIR}/{target}/\n")
 
-    total = len(results)
-    print(f"[*] loaded {total} rules from {RULES_DIR}/{target}/\n")
-    for i, r in enumerate(results, 1):
+    def _show(i, total, r):
         color = _STATUS_COLOR.get(r.status.value, "")
         title = _fit(r.check.title, 50)
-        dots = "." * 4
         note = ""
         if r.waived:
             note = f"  (waived until {r.waiver.expires.isoformat()}, {r.waiver.ticket or r.waiver.owner})"
@@ -95,7 +86,17 @@ def cmd_scan(args) -> int:
             note = f"  ({r.check.severity})"
         elif r.status.value == "WARN":
             note = "  (manual review)" if r.check.manual else "  (review)"
-        print(f"[{i:>2}/{total}]  {r.check.id:<18} {title} {dots} {color}{r.status.value}{_RESET}{note}")
+        print(f"[{i:>2}/{total}]  {r.check.id:<18} {title} .... "
+              f"{color}{r.status.value}{_RESET}{note}", flush=True)
+
+    conn = _open_connection(target, args)
+    try:
+        results, summary, notes = run_scan(
+            target, conn, RULES_DIR, waiver_list=loaded.waivers, host=host,
+            on_result=_show,
+        )
+    finally:
+        conn.close()
 
     for note in notes:
         print(f"[!] {note}")

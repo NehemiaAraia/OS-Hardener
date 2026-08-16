@@ -67,12 +67,19 @@ def run_scan(
     waiver_list=None,
     host: str = "",
     today: date | None = None,
+    on_result=None,
 ) -> tuple[list[CheckResult], dict, list[str]]:
     policies = load_policies(rules_dir, platform)
+    checks = [c for pol in policies for c in pol.checks]
     results: list[CheckResult] = []
-    for pol in policies:
-        for check in pol.checks:
-            results.append(evaluate(check, platform, conn))
+    for i, check in enumerate(checks, 1):
+        result = evaluate(check, platform, conn)
+        results.append(result)
+        # reported as each control finishes rather than in a batch at the end:
+        # a WinRM probe spawns a PowerShell process per check, so a full scan is
+        # tens of seconds and a silent terminal looks like a hang
+        if on_result:
+            on_result(i, len(checks), result)
 
     notes = []
     if waiver_list:

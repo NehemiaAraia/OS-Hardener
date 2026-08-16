@@ -59,9 +59,14 @@ Write-Host "[*] starting Remote Registry..."
 Set-Service -Name RemoteRegistry -StartupType Automatic -ErrorAction SilentlyContinue
 Start-Service -Name RemoteRegistry -ErrorAction SilentlyContinue
 
-# the firewall is deliberately LEFT ON. Turning it off on a cloud instance you
-# reach over the network is how you lose access to the box mid-demo.
-Write-Host "[*] firewall left enabled on purpose (turning it off risks your own access)"
+Write-Host "[*] enabling the Guest account..."
+Enable-LocalUser -Name Guest -ErrorAction SilentlyContinue
+
+# Turning the firewall OFF cannot cost us access — it stops filtering. The risk
+# is on the way back UP, so remediation re-enables all three profiles and the
+# WinRM HTTPS allow-rule created at bootstrap is what keeps the session alive.
+Write-Host "[*] disabling the firewall on all profiles..."
+Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled False
 
 Write-Host ""
 Write-Host "[*] done. this host is now deliberately non-compliant."
