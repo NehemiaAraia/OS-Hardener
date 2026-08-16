@@ -1,10 +1,16 @@
+? $a=([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator);
+  if(-not $a){''}else{(Get-BitLockerVolume -MountPoint $env:SystemDrive).ProtectionStatus}
+: exit_status: 0
+  stdout: 'Off'
+? $a=([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator);
+  if(-not $a){''}else{[int]((Get-Date) - (Get-HotFix | Sort-Object InstalledOn -Descending
+  | Select-Object -First 1).InstalledOn).TotalDays}
+: exit_status: 0
+  stdout: '12'
 ? $v=(Get-ItemProperty 'HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters'
   -Name SMB1 -EA SilentlyContinue).SMB1; if($null -eq $v){'absent'}else{$v}
 : exit_status: 0
   stdout: '1'
-(Get-BitLockerVolume -MountPoint $env:SystemDrive).ProtectionStatus:
-  exit_status: 0
-  stdout: 'Off'
 (Get-LocalUser -Name 'Guest').Enabled:
   exit_status: 0
   stdout: 'False'
@@ -34,9 +40,6 @@ Get-LocalGroupMember -Group 'Administrators' | Select-Object -ExpandProperty Nam
   stdout: 'Administrator
 
     svc-deploy'
-'[int]((Get-Date) - (Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 1).InstalledOn).TotalDays':
-  exit_status: 0
-  stdout: '12'
 ? secedit /export /cfg $env:TEMP\sec.cfg | Out-Null; (Select-String -Path $env:TEMP\sec.cfg
   -Pattern 'PasswordComplexity').Line.Split('=')[1].Trim()
 : exit_status: 0

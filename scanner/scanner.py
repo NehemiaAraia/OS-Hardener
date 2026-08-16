@@ -6,6 +6,7 @@ from pathlib import Path
 
 from . import waivers as waivers_mod
 from .evaluator import evaluate
+from .executor import probe_command
 from .model import CheckResult, Status
 from .parser import load_policies
 from .scoring import summarize
@@ -71,6 +72,18 @@ def run_scan(
 ) -> tuple[list[CheckResult], dict, list[str]]:
     policies = load_policies(rules_dir, platform)
     checks = [c for pol in policies for c in pol.checks]
+
+    # collect every probe up front so backends that can batch (WinRM) pay one
+    # round trip instead of one per sub-rule
+    probes = []
+    for check in checks:
+        for sub in check.rules:
+            try:
+                probes.append(probe_command(sub, platform))
+            except ValueError:
+                pass  # unsupported here; evaluate() reports it as unverified
+    conn.prefetch(probes)
+
     results: list[CheckResult] = []
     for i, check in enumerate(checks, 1):
         result = evaluate(check, platform, conn)

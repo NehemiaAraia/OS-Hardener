@@ -19,6 +19,15 @@ class Connection:
     def run(self, command: str) -> CommandOutput:
         raise NotImplementedError
 
+    def prefetch(self, commands) -> None:
+        """Optionally collect several probes in one round trip.
+
+        Backends where a round trip is cheap can ignore this; WinRM overrides it
+        because each probe otherwise spawns its own PowerShell process on the
+        target, which dominates scan time. Results are cached and served by run().
+        """
+        return None
+
     def close(self) -> None:
         pass
 

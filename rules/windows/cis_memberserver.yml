@@ -145,12 +145,13 @@ checks:
     description: >
       Not scored — enabling BitLocker on a running cloud instance is disruptive
       and has no safe unattended fix, so it reports as a finding for manual action
-      rather than dragging the score.
+      rather than dragging the score. Get-BitLockerVolume blocks for ~25s when
+      called without administrative rights, so the probe checks for them first.
     remediation: No safe auto-fix defined — enable BitLocker during a planned maintenance window.
     references:
       - Organizational control — CIS v5.1.0 §18.10.9 is present but unmapped
     rules:
-      - "cmd:(Get-BitLockerVolume -MountPoint $env:SystemDrive).ProtectionStatus -> equals:On"
+      - "cmd:$a=([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator); if(-not $a){''}else{(Get-BitLockerVolume -MountPoint $env:SystemDrive).ProtectionStatus} -> equals:On"
 
   - id: WIN-LEGACY-SVC
     title: Legacy services disabled (Telnet, Remote Registry)
@@ -182,9 +183,11 @@ checks:
     condition: all
     description: >
       Age is computed on the host so the result doesn't depend on the scanner's
-      clock; an unparseable result reports WARN rather than passing.
+      clock; an unparseable result reports WARN rather than passing. Get-HotFix
+      needs administrative rights, so the probe checks for them first and returns
+      nothing immediately rather than spending seconds failing.
     remediation: Install pending updates (Install-WindowsUpdate / WSUS cycle).
     references:
       - Operational control — NIST SP 800-53 Rev 5 SI-2; no CIS equivalent
     rules:
-      - "cmd:[int]((Get-Date) - (Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 1).InstalledOn).TotalDays -> maxint:35"
+      - "cmd:$a=([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator); if(-not $a){''}else{[int]((Get-Date) - (Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 1).InstalledOn).TotalDays} -> maxint:35"
