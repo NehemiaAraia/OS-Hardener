@@ -10,7 +10,11 @@
 #   .\lab_reset_windows.ps1 -IUnderstandThisWeakensThisHost
 
 param(
-    [switch]$IUnderstandThisWeakensThisHost
+    [switch]$IUnderstandThisWeakensThisHost,
+    # Non-interactive equivalent of the prompt below: you still have to know and
+    # supply the exact hostname, which is the point of the check. Read-Host
+    # blocks forever over WinRM, where there is no stdin to answer it.
+    [string]$ConfirmHostname
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,7 +33,11 @@ To proceed:
 }
 
 Write-Host "host: $env:COMPUTERNAME"
-$answer = Read-Host "weaken THIS host for a hardening demo? type the hostname to confirm"
+if ($ConfirmHostname) {
+    $answer = $ConfirmHostname
+} else {
+    $answer = Read-Host "weaken THIS host for a hardening demo? type the hostname to confirm"
+}
 if ($answer -ne $env:COMPUTERNAME) {
     Write-Host "hostname did not match, aborting" -ForegroundColor Red
     exit 1
