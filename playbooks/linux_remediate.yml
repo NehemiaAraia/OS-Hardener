@@ -46,6 +46,16 @@
         state: present
       tags: [LNX-3.5.1, firewall]
 
+    # written offline, before the service starts — bringing up a firewall on a
+    # host you reach over SSH without first guaranteeing SSH is permitted is how
+    # you lock yourself out of a machine you are in the middle of hardening
+    - name: Permit SSH in the default zone before the firewall comes up
+      ansible.builtin.command: firewall-offline-cmd --add-service=ssh
+      register: fw_ssh
+      changed_when: "'ALREADY_ENABLED' not in fw_ssh.stderr"
+      failed_when: fw_ssh.rc != 0 and 'ALREADY_ENABLED' not in fw_ssh.stderr
+      tags: [LNX-3.5.1, firewall]
+
     - name: Enable and start firewalld
       ansible.builtin.service:
         name: firewalld
