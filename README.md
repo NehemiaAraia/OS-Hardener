@@ -18,6 +18,8 @@ lacks the rights to read them.
 
 ## Live Demo
 
+![Demo](./docs/demo.gif)
+
 **RHEL 9**, 18% to 91%, seven controls remediated through Ansible
 
 https://github.com/user-attachments/assets/eafeca94-593a-4222-8ddf-d5576c4c9ba0
