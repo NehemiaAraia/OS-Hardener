@@ -46,7 +46,7 @@
         state: present
       tags: [LNX-FIREWALL, firewall]
 
-    # written offline, before the service starts — bringing up a firewall on a
+    # written offline, before the service starts, bringing up a firewall on a
     # host you reach over SSH without first guaranteeing SSH is permitted is how
     # you lock yourself out of a machine you are in the middle of hardening
     - name: Permit SSH in the default zone before the firewall comes up
@@ -82,7 +82,7 @@
         mode: '0644'
       tags: [LNX-PW-MINLEN, password]
 
-    # mode only — deliberately not touching ownership or content, so a
+    # mode only, deliberately not touching ownership or content, so a
     # misconfigured system is corrected without rewriting account data
     - name: Correct /etc/passwd permissions
       ansible.builtin.file:

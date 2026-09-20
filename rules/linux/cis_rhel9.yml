@@ -87,7 +87,7 @@ checks:
     nist: NIST800-53R5_AC-3
     condition: all
     description: >
-      Runs through the root-owned helper — an unprivileged find silently skips
+      Runs through the root-owned helper, an unprivileged find silently skips
       directories it can't read and would under-report.
     remediation: Remove the world-writable bit (chmod o-w) from the listed files.
     references:
@@ -106,7 +106,7 @@ checks:
     manual: true
     description: >
       A stock system legitimately ships SUID/SGID binaries, so there's no correct
-      pass/fail baseline — the list is collected and put in front of a reviewer.
+      pass/fail baseline, the list is collected and put in front of a reviewer.
     remediation: Compare the listed binaries against the expected set for this build.
     references:
       - CIS Red Hat Enterprise Linux 9 Benchmark v2.0.0 §7.1.13
@@ -123,7 +123,7 @@ checks:
     condition: all
     description: >
       'grep -c' exits non-zero when it matches nothing, even though 0 is the
-      correct answer — '|| true' keeps a compliant host from looking like a
+      correct answer, '|| true' keeps a compliant host from looking like a
       failed probe.
     remediation: dnf remove telnet-server rsh-server vsftpd
     references:
@@ -140,7 +140,7 @@ checks:
     nist: NIST800-53R5_IA-5_1_a
     condition: all
     description: >
-      An unset minlen returns no value, which reports WARN rather than passing —
+      An unset minlen returns no value, which reports WARN rather than passing,
       absence of a policy is not evidence of a compliant one.
     remediation: Set 'minlen = 14' in /etc/security/pwquality.conf
     references:

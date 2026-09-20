@@ -39,7 +39,7 @@ variable "instance_type" {
   default = "t3.medium"
 }
 
-# looked up dynamically — hardcoded AMI IDs go stale
+# looked up dynamically, hardcoded AMI IDs go stale
 data "aws_ami" "windows_2022" {
   most_recent = true
   owners      = ["amazon"]
@@ -114,7 +114,7 @@ resource "aws_instance" "windows" {
 
   # Brings up the encrypted WinRM listener at first boot so the host can be
   # bootstrapped remotely instead of through an interactive RDP session. It
-  # configures transport only — the least-privilege service account is still
+  # configures transport only, the least-privilege service account is still
   # created by scripts/bootstrap_windows.ps1, run afterwards over this channel.
   user_data = <<-EOF
     <powershell>

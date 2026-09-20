@@ -84,7 +84,7 @@ def find(waivers: list[Waiver], check_id: str, host: str, today: date) -> Option
 
 
 def expired_for(waivers: list[Waiver], check_id: str, host: str, today: date) -> Optional[Waiver]:
-    """An expired waiver that would otherwise have matched — worth saying out
+    """An expired waiver that would otherwise have matched, worth saying out
     loud, since the finding is about to come back and surprise someone."""
     for w in waivers:
         if w.check_id == check_id and w.covers(host) and not w.active_on(today):

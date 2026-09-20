@@ -79,7 +79,7 @@ _INDEX = """
 {% extends "layout.html" %}
 {% block body %}
 <h1>Scan history</h1>
-<p class="muted">{{ scans|length }} scan(s). Coverage is shown alongside every score —
+<p class="muted">{{ scans|length }} scan(s). Coverage is shown alongside every score,
 a score computed from a subset is not the same claim as a full one.</p>
 <table>
   <tr><th>#</th><th>Platform</th><th>Host</th><th>When (UTC)</th><th>Score</th>
@@ -105,13 +105,13 @@ _DETAIL = """
 {% extends "layout.html" %}
 {% block body %}
 <p><a href="/">&larr; all scans</a></p>
-<h1>Scan {{ scan['id'] }} — {{ scan['platform'] }} @ {{ scan['host'] }}</h1>
+<h1>Scan {{ scan['id'] }}, {{ scan['platform'] }} @ {{ scan['host'] }}</h1>
 <p class="muted">{{ scan['timestamp'] }} UTC</p>
 <p><strong>Score {{ scan['score'] }}%</strong>
    from {{ scan['scored_total'] }}/{{ scan['scored_defined'] }} scored controls
    (coverage {{ scan['coverage'] }}%)</p>
 {% if scan['coverage'] < 100 %}
-<p class="WARN">Partial coverage — {{ scan['scored_defined'] - scan['scored_total'] }}
+<p class="WARN">Partial coverage, {{ scan['scored_defined'] - scan['scored_total'] }}
    scored control(s) could not be verified and are excluded from the score.</p>
 {% endif %}
 <table>
@@ -131,7 +131,7 @@ _DETAIL = """
 """
 
 
-# .html names keep Flask's autoescaping on — values here come off scanned hosts
+# .html names keep Flask's autoescaping on, values here come off scanned hosts
 app.jinja_loader = DictLoader(
     {"layout.html": _LAYOUT, "index.html": _INDEX, "detail.html": _DETAIL}
 )

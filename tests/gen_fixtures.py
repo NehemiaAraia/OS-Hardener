@@ -85,7 +85,7 @@ SCENARIOS = {
         ("LNX-PATCH-AGE", 0): ("3", 0),
     },
     # the scanner account can reach the host but sudo is refused, so the helper
-    # prints nothing — these controls must report WARN, not a fabricated pass
+    # prints nothing, these controls must report WARN, not a fabricated pass
     "linux/sudo_denied": {
         ("LNX-SSH-ROOT", 0): (SSHD_HARDENED, 0),
         ("LNX-SSH-PASSAUTH", 0): (SSHD_HARDENED, 0),

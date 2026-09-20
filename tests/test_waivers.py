@@ -170,7 +170,7 @@ def test_waived_control_is_not_remediated(tmp_path):
 
 
 def test_shipped_exceptions_file_is_valid():
-    """The committed example must parse — a broken one teaches the wrong format."""
+    """The committed example must parse, a broken one teaches the wrong format."""
     load = w.load_waivers(ROOT / "exceptions.yml")
     assert not load.problems
     assert load.waivers

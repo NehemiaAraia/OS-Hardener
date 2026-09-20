@@ -10,7 +10,7 @@ from .base import CommandOutput, Connection
 class FixtureConnection(Connection):
     """Replays recorded command output for offline dev and CI. A scenario file
     is a YAML mapping of exact command string -> {stdout, exit_status}. A command
-    not present in the scenario returns ok=False, i.e. 'host unreachable' — which
+    not present in the scenario returns ok=False, i.e. 'host unreachable', which
     keeps the fail-safe honest: a missing fixture never silently passes a check."""
 
     def __init__(self, scenario: str, base_dir: str | None = None):

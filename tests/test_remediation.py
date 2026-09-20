@@ -223,7 +223,7 @@ def test_every_catalog_fix_maps_to_a_real_control():
 # --- input validation --------------------------------------------------------
 
 def test_host_validation_rejects_inventory_injection():
-    """Ansible's inline inventory is '<host>,' — an unchecked comma would extend
+    """Ansible's inline inventory is '<host>,', an unchecked comma would extend
     remediation to machines that were never named."""
     from scanner.validate import valid_host
 
@@ -255,7 +255,7 @@ def test_probe_commands_quote_their_targets():
 
 def test_failing_control_with_no_catalog_entry_is_reported():
     """A 3-FAIL scan producing a 2-item plan with no explanation is a lie by
-    omission — the dropped control must be named."""
+    omission, the dropped control must be named."""
     results, _ = scan_of("linux", "baseline")
     plan = rem.build_plan(results, rem_linux.CATALOG, "linux", "10.0.0.5")
     reported = {cid for cid, _ in plan.no_fix_defined}

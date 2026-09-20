@@ -17,7 +17,7 @@ ansible-playbook --version           # only needed for Linux remediation
 python3 --version                    # 3.11+
 ```
 
-An EC2 key pair must already exist in the target region — Terraform references it
+An EC2 key pair must already exist in the target region, Terraform references it
 by name, it does not create one:
 
 ```bash
@@ -27,7 +27,7 @@ aws ec2 import-key-pair --key-name hardening-lab \
 ```
 
 `curl -4` is not optional in the next step. On an IPv6-capable connection a plain
-`curl ifconfig.me` returns an IPv6 address, which `cidr_blocks` rejects — the
+`curl ifconfig.me` returns an IPv6 address, which `cidr_blocks` rejects, the
 apply fails on an invalid CIDR.
 
 ---
@@ -68,7 +68,7 @@ RDP in as `Administrator` (decrypt the password with your key pair), copy
 
 **Watch for:**
 - `New-SelfSignedCertificate` needs an elevated session.
-- The script is re-runnable, but a re-run **rotates the password** — recopy it.
+- The script is re-runnable, but a re-run **rotates the password**, recopy it.
 - Verify from the Mac before moving on:
   ```bash
   nc -vz <windows-ip> 5986     # should connect
@@ -85,7 +85,7 @@ ssh -i ~/.ssh/hardening_lab ec2-user@<linux-ip>
 sudo ./bootstrap_linux.sh "$(cat ~/.ssh/hardening_lab.pub)"
 ```
 
-Both scripts must be copied — the bootstrap installs the helper from its own
+Both scripts must be copied, the bootstrap installs the helper from its own
 directory.
 
 **Expect:** account created, sudoers file validated by `visudo -c`, helper
@@ -101,7 +101,7 @@ is wrong.
 
 ---
 
-## 4. First live scan — the real milestone
+## 4. First live scan, the real milestone
 
 ```bash
 export SSH_USER=svc-hardening-scanner SSH_KEY=~/.ssh/hardening_lab
@@ -128,7 +128,7 @@ test against. The likely failures, in order:
 | `LNX-PW-MINLEN` WARN | `pwquality.conf` has no `minlen` | that is a true finding, not a bug |
 | Linux sudo controls WARN | helper not installed or sudoers wrong | re-check step 3 |
 
-**A WARN is the tool working correctly** — it means "I could not verify this,"
+**A WARN is the tool working correctly**, it means "I could not verify this,"
 not "this is broken." Only investigate WARNs that should have been verifiable.
 
 When a probe needs fixing, change the rule file, then:
@@ -148,7 +148,7 @@ python main.py remediate --target linux   --host <linux-ip> --dry-run
 python main.py remediate --target windows --host <windows-ip> --dry-run
 ```
 
-Then apply. This needs **different credentials than scanning** — the scanner
+Then apply. This needs **different credentials than scanning**, the scanner
 account is read-only by design and cannot make changes:
 
 ```bash
@@ -166,7 +166,7 @@ applying, and keep that session open until you've verified you can reconnect.
 **Watch for:**
 - SMBv1 removal flags a reboot. The scanner reports it; it does not reboot.
 - If a fix reports APPLY but the re-scan still says FAIL, the fix ran but did not
-  achieve the control — that gap is worth understanding, not papering over.
+  achieve the control, that gap is worth understanding, not papering over.
 
 ---
 
@@ -194,7 +194,7 @@ python dashboard.py            # https://127.0.0.1:8443
 
 **Resetting to a failing baseline** (so remediation has something to fix). These
 scripts deliberately weaken the host and refuse to run without an explicit
-acknowledgement plus a hostname confirmation — they are for disposable lab
+acknowledgement plus a hostname confirmation, they are for disposable lab
 instances only:
 
 ```bash
@@ -206,7 +206,7 @@ sudo I_UNDERSTAND_THIS_WEAKENS_THIS_HOST=yes ./scripts/lab_reset_linux.sh
 
 The Linux script leaves password authentication **on** so your key login keeps
 working while the control fails again, and the Windows script leaves the
-firewall **enabled** — turning it off on an instance you reach over the network
+firewall **enabled**, turning it off on an instance you reach over the network
 is how you lose access to the host.
 
 ---

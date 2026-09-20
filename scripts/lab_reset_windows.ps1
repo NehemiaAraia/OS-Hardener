@@ -1,4 +1,4 @@
-# LAB ONLY — this WEAKENS the machine it runs on.
+# LAB ONLY, this WEAKENS the machine it runs on.
 #
 # A fresh Windows Server 2022 AMI already passes several controls, so a
 # before/after run has nothing to fix. This reverts a handful of settings to a
@@ -62,7 +62,7 @@ Start-Service -Name RemoteRegistry -ErrorAction SilentlyContinue
 Write-Host "[*] enabling the Guest account..."
 Enable-LocalUser -Name Guest -ErrorAction SilentlyContinue
 
-# Turning the firewall OFF cannot cost us access — it stops filtering. The risk
+# Turning the firewall OFF cannot cost us access, it stops filtering. The risk
 # is on the way back UP, so remediation re-enables all three profiles and the
 # WinRM HTTPS allow-rule created at bootstrap is what keeps the session alive.
 Write-Host "[*] disabling the firewall on all profiles..."

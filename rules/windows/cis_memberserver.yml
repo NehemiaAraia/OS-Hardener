@@ -18,7 +18,7 @@ checks:
     description: >
       Legacy SMBv1 (EternalBlue) lingers on manufacturing/OT equipment; the
       server component must be off. The SMB1 value is absent unless someone has
-      explicitly set it, so the probe defaults it rather than erroring — an
+      explicitly set it, so the probe defaults it rather than erroring, an
       unreadable value would otherwise report unverified on every stock host.
     remediation: Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol
     references:
@@ -37,7 +37,7 @@ checks:
     description: >
       Reads the live firewall state under SharedAccess rather than the
       Policies\\WindowsFirewall keys, which only exist once Group Policy has
-      written them — on a standalone member server those keys are absent and the
+      written them, on a standalone member server those keys are absent and the
       control could never be verified.
     remediation: Set-NetFirewallProfile -Profile Domain,Private,Public -Enabled True
     references:
@@ -57,10 +57,10 @@ checks:
     manual: true
     description: >
       Membership of the local Administrators group is site-specific and can't be
-      auto-verified against a fixed baseline — flagged for manual review.
+      auto-verified against a fixed baseline, flagged for manual review.
     remediation: Review the listed members against the approved administrator list.
     references:
-      - Organizational control — privileged access review; no equivalent in CIS v5.1.0
+      - Organizational control, privileged access review; no equivalent in CIS v5.1.0
     rules:
       - "cmd:Get-LocalGroupMember -Group 'Administrators' | Select-Object -ExpandProperty Name -> exists:"
 
@@ -143,13 +143,13 @@ checks:
     nist: NIST800-53R5_SC-28
     condition: all
     description: >
-      Not scored — enabling BitLocker on a running cloud instance is disruptive
+      Not scored, enabling BitLocker on a running cloud instance is disruptive
       and has no safe unattended fix, so it reports as a finding for manual action
       rather than dragging the score. Get-BitLockerVolume blocks for ~25s when
       called without administrative rights, so the probe checks for them first.
-    remediation: No safe auto-fix defined — enable BitLocker during a planned maintenance window.
+    remediation: No safe auto-fix defined, enable BitLocker during a planned maintenance window.
     references:
-      - Organizational control — CIS v5.1.0 §18.10.9 is present but unmapped
+      - Organizational control, CIS v5.1.0 §18.10.9 is present but unmapped
     rules:
       - "cmd:$a=([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator); if(-not $a){''}else{(Get-BitLockerVolume -MountPoint $env:SystemDrive).ProtectionStatus} -> equals:On"
 
@@ -164,7 +164,7 @@ checks:
     description: >
       Reads each service's Start value from the registry rather than calling
       Get-Service. A non-admin Get-Service returns nothing for a service it
-      cannot see, which is indistinguishable from the service being absent —
+      cannot see, which is indistinguishable from the service being absent,
       that reported a running Remote Registry as compliant. Start=4 is disabled.
     remediation: Stop-Service and Set-Service -StartupType Disabled for TlntSvr and RemoteRegistry.
     references:
@@ -188,6 +188,6 @@ checks:
       nothing immediately rather than spending seconds failing.
     remediation: Install pending updates (Install-WindowsUpdate / WSUS cycle).
     references:
-      - Operational control — NIST SP 800-53 Rev 5 SI-2; no CIS equivalent
+      - Operational control, NIST SP 800-53 Rev 5 SI-2; no CIS equivalent
     rules:
       - "cmd:$a=([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator); if(-not $a){''}else{[int]((Get-Date) - (Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 1).InstalledOn).TotalDays} -> maxint:35"

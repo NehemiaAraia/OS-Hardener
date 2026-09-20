@@ -127,12 +127,12 @@ def evaluate(check: Check, platform: str, conn) -> CheckResult:
         return CheckResult(check, Status.WARN, "manual review required", evidence)
     if not check.rules:
         # nothing was actually verified, so this cannot be a pass
-        return CheckResult(check, Status.WARN, "no sub-rules defined — nothing verified", [])
+        return CheckResult(check, Status.WARN, "no sub-rules defined, nothing verified", [])
     status = _resolve(check.condition, evidence)
     if status is Status.WARN and any(e.output == "<unreachable>" for e in evidence):
-        msg = "host unreachable or evidence unavailable — not passed by default"
+        msg = "host unreachable or evidence unavailable, not passed by default"
     elif status is Status.WARN:
-        msg = "could not be verified cleanly — flagged for review"
+        msg = "could not be verified cleanly, flagged for review"
     elif status is Status.FAIL:
         msg = "control not satisfied"
     else:

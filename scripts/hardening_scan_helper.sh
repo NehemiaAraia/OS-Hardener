@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Installed to /usr/local/sbin/hardening-scan-helper, root-owned, 0755.
 # The scanner account is granted sudo on this script's fixed verbs only, so it
-# never gets sudo on find/grep directly — a wildcarded 'sudo find' entry would
+# never gets sudo on find/grep directly, a wildcarded 'sudo find' entry would
 # allow -exec and hand out a root shell.
 # Each verb prints a count or a list, and nothing at all on failure, so a
 # permission problem surfaces as WARN rather than a fabricated zero.

@@ -1,4 +1,4 @@
-"""SQLite store for scan history. Every query is parameterized — no string
+"""SQLite store for scan history. Every query is parameterized, no string
 interpolation reaches SQL, including the values that come off scanned hosts."""
 from __future__ import annotations
 

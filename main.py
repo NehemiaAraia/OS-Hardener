@@ -65,14 +65,14 @@ def _open_connection(target: str, args):
 def cmd_scan(args) -> int:
     target = args.target
     # the host identifies the target across scans, so it must not encode which
-    # fixture was replayed — otherwise before/after look like two different hosts
+    # fixture was replayed, otherwise before/after look like two different hosts
     # and the delta never fires
     host = args.host or "fixture"
     label = f"{host} ({args.fixture})" if args.fixture else host
     print(f"[*] connecting to {target} target ({label})...")
     loaded = waivers_mod.load_waivers(args.waivers)
     for problem in loaded.problems:
-        print(f"[!] waiver rejected — {problem}", file=sys.stderr)
+        print(f"[!] waiver rejected, {problem}", file=sys.stderr)
 
     print(f"[*] loaded rules from {RULES_DIR}/{target}/\n")
 
@@ -104,17 +104,17 @@ def cmd_scan(args) -> int:
     waived_note = f" / {summary['waived']} WAIVED" if summary["waived"] else ""
     print(
         f"\n[*] scan complete: {summary['pass']} PASS / {summary['fail']} FAIL / "
-        f"{summary['warn']} WARN{waived_note} — compliance score: {summary['score']}% "
+        f"{summary['warn']} WARN{waived_note}, compliance score: {summary['score']}% "
         f"(verified {summary['scored_total']}/{summary['scored_defined']} scored controls)"
     )
     if summary["waived"]:
         print(
             f"[*] {summary['waived']} finding(s) excluded from the score by documented "
-            f"waiver — still listed above"
+            f"waiver, still listed above"
         )
     if summary["coverage"] < 100:
         print(
-            f"[!] coverage {summary['coverage']}% — "
+            f"[!] coverage {summary['coverage']}%, "
             f"{summary['scored_defined'] - summary['scored_total']} scored control(s) "
             f"could not be verified; the score above is computed only from those that were"
         )
@@ -179,7 +179,7 @@ def _remediation_credentials(target: str):
         names = "REMEDIATE_SSH_USER and REMEDIATE_SSH_KEY"
     if not user or not secret:
         sys.exit(
-            f"set {names} for remediation — the read-only scanner account cannot "
+            f"set {names} for remediation, the read-only scanner account cannot "
             f"apply changes, which is intentional"
         )
     return user, secret
@@ -205,10 +205,10 @@ def cmd_remediate(args) -> int:
         plan = remediation.build_plan(results, catalog, target, host or "fixture")
 
         for check_id, title in plan.no_fix_defined:
-            print(f"[NO FIX]  {check_id:<18} {title} — failing, no automated fix defined")
+            print(f"[NO FIX]  {check_id:<18} {title}, failing, no automated fix defined")
 
         if not plan.actionable and not plan.skipped:
-            print("[*] nothing to remediate — no failing controls have a defined fix")
+            print("[*] nothing to remediate, no failing controls have a defined fix")
             return 0
 
         if apply:
@@ -228,7 +228,7 @@ def cmd_remediate(args) -> int:
 
 def _remediate(plan, target, args, apply):
     """One Ansible invocation per run, for either platform. Only the connection
-    variables differ — dry-run maps to Ansible's own --check rather than a
+    variables differ, dry-run maps to Ansible's own --check rather than a
     Python imitation of it."""
     tags = [f.check_id for f in plan.fixes]
     outcomes = [remediation.FixOutcome(f, "SKIP", f.reason_no_fix) for f in plan.skipped]
@@ -260,7 +260,7 @@ def _report_outcomes(outcomes, apply) -> int:
     applied = failed = 0
     for o in outcomes:
         if o.action == "SKIP":
-            print(f"[SKIP]    {o.fix.check_id:<18} {o.fix.title} — {o.detail}")
+            print(f"[SKIP]    {o.fix.check_id:<18} {o.fix.title}, {o.detail}")
         elif o.action == "DRY-RUN":
             print(f"[DRY-RUN] {o.fix.check_id:<18} {o.fix.title}")
             print(f"    would run: {o.detail}")
@@ -269,7 +269,7 @@ def _report_outcomes(outcomes, apply) -> int:
             applied += 1
             reboot = reboot or o.fix.requires_reboot
         else:
-            print(f"[FAIL]    {o.fix.check_id:<18} {o.fix.title} — {o.detail}")
+            print(f"[FAIL]    {o.fix.check_id:<18} {o.fix.title}, {o.detail}")
             failed += 1
 
     if apply:

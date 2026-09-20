@@ -1,4 +1,4 @@
-# Documented risk acceptances. A waived control still appears in every report —
+# Documented risk acceptances. A waived control still appears in every report,
 # it is removed from the compliance score, never from the output.
 #
 # Required on every entry: check_id, reason, owner, expires (YYYY-MM-DD).

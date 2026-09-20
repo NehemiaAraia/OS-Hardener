@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# LAB ONLY — this WEAKENS the machine it runs on.
+# LAB ONLY, this WEAKENS the machine it runs on.
 #
 # A fresh RHEL AMI already passes several controls, so a before/after run has
 # nothing to fix. This reverts a handful of settings to a realistic unhardened
@@ -32,7 +32,7 @@ fi
 
 # a cloud instance is the expected target; refuse if this looks like a real box
 if [[ ! -f /sys/hypervisor/uuid && ! -d /sys/class/dmi/id ]]; then
-    echo "cannot confirm this is a VM — refusing" >&2
+    echo "cannot confirm this is a VM, refusing" >&2
     exit 1
 fi
 
@@ -68,14 +68,14 @@ else
     echo 'minlen = 8' >> /etc/security/pwquality.conf
 fi
 
-# world-readable password hashes — the single most obviously wrong thing on the
+# world-readable password hashes, the single most obviously wrong thing on the
 # box, and a good one to point at on screen
 echo "[*] loosening /etc/passwd and /etc/shadow permissions..."
 chmod 0666 /etc/passwd
 chmod 0644 /etc/shadow
 
 if [[ $FIXABLE_ONLY -eq 0 ]]; then
-    # no remediation exists for this one on purpose — a blanket 'chmod -R o-w'
+    # no remediation exists for this one on purpose, a blanket 'chmod -R o-w'
     # across a filesystem is the reckless move, so the tool reports it instead
     echo "[*] creating a world-writable file (no auto-fix exists for this)..."
     install -d -m 0755 /opt/lab
@@ -91,6 +91,6 @@ cat <<'EOF'
     verify:  python main.py scan --target linux --host <ip>
     restore: python main.py remediate --target linux --host <ip> --apply
 
-    note: LNX-2.2.1 (legacy packages) is left alone on purpose — installing
+    note: LNX-2.2.1 (legacy packages) is left alone on purpose, installing
     telnet-server just to fail a control is not worth the cleanup.
 EOF

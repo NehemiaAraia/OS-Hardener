@@ -66,7 +66,7 @@ def test_windows_hardened_statuses():
 
 def test_legacy_services_detected_via_registry_not_get_service():
     """A non-admin Get-Service returns nothing for a service it cannot see,
-    which is indistinguishable from the service being absent — that reported a
+    which is indistinguishable from the service being absent, that reported a
     running Remote Registry as compliant. The Start value is readable instead."""
     r, _ = scan("windows", "baseline")
     assert r["WIN-LEGACY-SVC"].status is Status.FAIL
@@ -101,7 +101,7 @@ def test_linux_hardened_statuses():
 
 
 def test_shared_probe_returns_same_evidence():
-    """5.2.8 and 5.2.9 read the same file — they must see identical content."""
+    """5.2.8 and 5.2.9 read the same file, they must see identical content."""
     r, _ = scan("linux", "hardened")
     assert r["LNX-SSH-ROOT"].evidence[0].output == r["LNX-SSH-PASSAUTH"].evidence[0].output
 
@@ -137,7 +137,7 @@ def test_manual_control_is_warn_but_still_collects_evidence():
         ("640", "0640", True),
         ("600", "0640", True),
         ("644", "0640", False),   # group+other read
-        ("007", "0640", False),   # world rwx — numerically small, wildly permissive
+        ("007", "0640", False),   # world rwx, numerically small, wildly permissive
         ("466", "0640", False),
         ("777", "0640", False),
     ],
@@ -155,7 +155,7 @@ def test_service_state_unknown_when_probe_fails():
 
 
 def test_service_state_reads_the_state_word_not_the_exit_code():
-    """systemctl is-active exits 3 for an inactive unit — still a definite answer."""
+    """systemctl is-active exits 3 for an inactive unit, still a definite answer."""
     inactive = CommandOutput(stdout="inactive", exit_status=3, ok=True)
     assert _match("stopped:", inactive) is True
     assert _match("running:", inactive) is False
@@ -205,7 +205,7 @@ def test_score_carries_coverage():
 
 def test_empty_output_is_never_a_verdict():
     """A pattern can be neither present nor absent in output that was never
-    produced — most often the probe lacked privilege to read what it asked for.
+    produced, most often the probe lacked privilege to read what it asked for.
     This reported 'auditpol requires admin' as a failing audit policy."""
     empty_clean = CommandOutput(stdout="", exit_status=0, ok=True)
     assert _match("regex:Success and Failure", empty_clean) is None

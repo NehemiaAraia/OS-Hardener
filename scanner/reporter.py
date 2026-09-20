@@ -1,6 +1,6 @@
 """Render scan results to JSON and a Bootstrap-styled HTML report.
 
-HTML goes through Jinja2 with autoescape ON — evidence output comes off scanned
+HTML goes through Jinja2 with autoescape ON, evidence output comes off scanned
 hosts and must never land unescaped in the page (the XSS smell avoided from
 WinSecureAuditor's raw f-string reporter)."""
 from __future__ import annotations
@@ -20,7 +20,7 @@ _TEMPLATE = _ENV.from_string(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hardening report — {{ meta.platform }} — {{ meta.host }}</title>
+<title>Hardening report, {{ meta.platform }}, {{ meta.host }}</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 <style>
   body { padding: 2rem; }
@@ -45,7 +45,7 @@ _TEMPLATE = _ENV.from_string(
   {% if summary.waived %}
   <div class="alert alert-secondary">
     <strong>{{ summary.waived }} finding(s) excluded from the score by documented waiver.</strong>
-    They remain listed below with owner, ticket and expiry — a waiver removes a
+    They remain listed below with owner, ticket and expiry, a waiver removes a
     finding from the score, never from the report.
   </div>
   {% endif %}
@@ -54,7 +54,7 @@ _TEMPLATE = _ENV.from_string(
   <div class="alert alert-warning">
     <strong>Coverage {{ summary.coverage }}%.</strong>
     {{ summary.scored_defined - summary.scored_total }} scored control(s) could not be
-    verified and are excluded from the score — treat it as a partial result.
+    verified and are excluded from the score, treat it as a partial result.
   </div>
   {% endif %}
 

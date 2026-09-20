@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run once on the RHEL host as ec2-user (or root).
 # Creates the scanner account with sudo limited to the exact read-only commands
-# the scanner runs — no blanket NOPASSWD:ALL.
+# the scanner runs, no blanket NOPASSWD:ALL.
 # Usage:  sudo ./bootstrap_linux.sh "ssh-ed25519 AAAA... operator@mac"
 
 set -euo pipefail

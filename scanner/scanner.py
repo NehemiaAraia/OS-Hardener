@@ -13,7 +13,7 @@ from .scoring import summarize
 
 
 def all_check_ids(rules_dir) -> set:
-    """Check IDs across every platform, not just the one being scanned — a
+    """Check IDs across every platform, not just the one being scanned, a
     Windows waiver is not stale merely because this run targeted Linux."""
     ids = set()
     base = Path(rules_dir)
@@ -44,13 +44,13 @@ def apply_waivers(results, waiver_list, host, today, known_ids=None):
             if expired:
                 notes.append(
                     f"{r.check.id}: waiver expired {expired.expires.isoformat()} "
-                    f"({expired.owner}) — counting as a finding again"
+                    f"({expired.owner}), counting as a finding again"
                 )
         elif r.status is Status.WARN:
             # accepting a risk you never measured is not risk acceptance
             if waivers_mod.find(waiver_list, r.check.id, host, today):
                 notes.append(
-                    f"{r.check.id}: waived, but the control is WARN (unverified) — "
+                    f"{r.check.id}: waived, but the control is WARN (unverified), "
                     f"the waiver does not apply"
                 )
 
