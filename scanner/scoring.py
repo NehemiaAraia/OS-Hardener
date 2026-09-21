@@ -9,7 +9,7 @@ from .model import CheckResult, Status
 
 
 def summarize(results: list[CheckResult]) -> dict:
-    counts = {"PASS": 0, "FAIL": 0, "WARN": 0}
+    counts = {"PASS": 0, "FAIL": 0, "WARN": 0}  # nosec B105
     for r in results:
         counts[r.status.value] += 1
 

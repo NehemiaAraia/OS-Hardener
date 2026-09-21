@@ -29,7 +29,7 @@ from scanner.validate import check_host
 RULES_DIR = os.environ.get("HARDENING_RULES_DIR", "rules")
 REPORTS_DIR = os.environ.get("HARDENING_REPORTS_DIR", "reports")
 
-_STATUS_COLOR = {"PASS": "\033[32m", "FAIL": "\033[31m", "WARN": "\033[33m"}
+_STATUS_COLOR = {"PASS": "\033[32m", "FAIL": "\033[31m", "WARN": "\033[33m"}  # nosec B105
 _RESET = "\033[0m"
 
 

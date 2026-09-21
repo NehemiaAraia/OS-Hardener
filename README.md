@@ -30,16 +30,13 @@ lacks the rights to read them.
 
 | Layer | Tech |
 |---|---|
-| Language | Python 3.11+ |
-| Rule format | YAML, modeled on Wazuh SCA (`policy` / `requirements` / `checks`) |
-| Connections | pywinrm (WinRM over HTTPS), paramiko (SSH) |
-| Remediation | Ansible, `ansible.windows` collection |
-| Storage | SQLite, parameterized queries |
-| Reporting | Jinja2 (autoescaped) → HTML + JSON |
-| Dashboard | Flask, basic auth over HTTPS |
-| Infra | Terraform, AWS EC2 |
-| CI | GitHub Actions, ruff, Bandit, gitleaks, pytest |
-| Benchmarks | CIS Windows Server 2022 v5.1.0, CIS RHEL 9 v2.0.0, CIS STIG v2.0.0 |
+| Language | Python, YAML |
+| Remediation | Ansible |
+| Connections | pywinrm, paramiko |
+| Storage | SQLite |
+| Reporting | Jinja2, Flask |
+| Infra & DevOps | Terraform, AWS EC2, GitHub Actions, pytest, ruff, Bandit, gitleaks |
+| Security frameworks | CIS Benchmarks, NIST 800-53, DISA STIG |
 
 ## Architecture
 
