@@ -22,7 +22,7 @@ lacks the rights to read them.
 
 ![RHEL 9 demo](./docs/linux-demo.gif)
 
-**Windows Server 2022**, 17% to 100%, five controls remediated
+**Windows Server 2022**, 17% to 100%, five controls remediated through Ansible
 
 ![Windows Server 2022 demo](./docs/windows-demo.gif)
 
