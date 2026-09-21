@@ -65,34 +65,31 @@ lacks the rights to read them.
 
 ## How it works
 
-- **Rules** (`rules/`): YAML per platform, typed sub-rules (`r:` registry, `f:` file,
-  `cmd:` command, `svc:` service, `perm:` file mode) combined with `all` / `any` / `none`
-- **Engine** (`scanner/`): `parser` loads rules, `executor` turns each sub-rule into a
-  probe, `evaluator` applies matchers and resolves status, `scoring` computes score and
-  coverage, `reporter` renders HTML and JSON
+- **Rules** (`rules/`): YAML, one file per platform. Typed sub-rules for registry, file,
+  command, service and permissions, combined with `all` / `any` / `none`
+- **Engine** (`scanner/`): parses the rules, runs each probe, resolves PASS/FAIL/WARN,
+  scores it, renders HTML and JSON
 - **Connections** (`scanner/connection/`): WinRM, SSH, and a fixture backend that replays
-  recorded output so the full pipeline runs offline in CI
-- **Remediation** (`scanner/remediation/`, `playbooks/`): one Ansible invocation per run,
-  scoped by tag to the controls a scan just found failing
-- **Waivers** (`exceptions.yml`): documented risk acceptance with mandatory expiry
+  recorded output so CI runs with no live host
+- **Remediation** (`scanner/remediation/`, `playbooks/`): one Ansible run per scan, scoped
+  by tag to the controls that actually failed
+- **Waivers** (`exceptions.yml`): risk acceptance with a required expiry date
 
 Design tradeoffs are in [`DECISIONS.md`](DECISIONS.md). Lab setup is in
 [`docs/runbook.md`](docs/runbook.md).
 
 ## Security model
 
-- The scanning account is read-only and cannot remediate. Remote Management Users on
-  Windows, four fixed sudo verbs on Linux, no `NOPASSWD: ALL`. Applying fixes takes
-  separate credentials
-- Nothing it could not verify is reported as compliant. Unreadable, unreachable, and
-  unparseable all resolve to WARN
-- Every score carries its coverage: `100% (verified 6/9 scored controls)` is a different
-  claim from `100% (verified 9/9)`
-- Remediation is dry-run by default, needs explicit confirmation, refuses to run
-  non-interactively, and logs every action
-- Controls with no safe automated fix are named in the output rather than skipped
-- WinRM runs over HTTPS with certificate validation on by default; the cleartext listener
-  is removed at bootstrap
+- Read-only scanning account. Remote Management Users on Windows, four fixed sudo verbs on
+  Linux, no `NOPASSWD: ALL`. Remediation takes separate credentials
+- Nothing unverified is reported as compliant. Unreadable, unreachable and unparseable all
+  resolve to WARN
+- Every score carries its coverage. `100% (verified 6/9)` is not `100% (verified 9/9)`
+- Dry-run by default. Applying needs an explicit confirm, refuses to run non-interactively,
+  and logs every action
+- Controls with no safe automated fix are named in the output, never silently skipped
+- WinRM over HTTPS with certificate validation on. The cleartext listener is removed at
+  bootstrap
 
 ## Control coverage
 
@@ -142,7 +139,7 @@ source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-Lab infrastructure is two EC2 instances behind a security group locked to one IP:
+The lab is two EC2 instances behind a security group locked to one IP:
 
 ```bash
 terraform init
@@ -155,29 +152,25 @@ Then run the bootstrap script once per host to create the scanning account. Full
 
 ## Usage
 
-Scan:
-
 ```bash
 export SSH_USER=svc-hardening-scanner SSH_KEY=~/.ssh/id_ed25519
-python main.py scan --target linux --host <ip>
-```
 
-Remediate, dry-run first:
-
-```bash
+python main.py scan      --target linux --host <ip>
 python main.py remediate --target linux --host <ip> --dry-run
 python main.py remediate --target linux --host <ip> --apply
 ```
 
-Re-scanning a host prints the delta against its previous run. Every scan writes an HTML
-report and JSON to `reports/`, and the history is browsable:
+Re-scanning the same host prints the delta against its previous run. Every scan writes an
+HTML report and JSON to `reports/`.
+
+Browse the history:
 
 ```bash
 export DASHBOARD_USER=admin DASHBOARD_PASS=<pick one>
 python dashboard.py
 ```
 
-Develop without a live host using recorded fixtures:
+Work without a live host using the recorded fixtures:
 
 ```bash
 python main.py scan --target linux --fixture linux/baseline
