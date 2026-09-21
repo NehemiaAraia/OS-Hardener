@@ -73,8 +73,7 @@ unverified because the scanning account has no rights to read them.
   by tag to the controls that actually failed
 - **Waivers** (`exceptions.yml`): risk acceptance with a required expiry date
 
-Design tradeoffs are in [`DECISIONS.md`](DECISIONS.md). Lab setup is in
-[`docs/runbook.md`](docs/runbook.md).
+Design tradeoffs are in [`DECISIONS.md`](DECISIONS.md).
 
 ## Security model
 
@@ -145,8 +144,9 @@ terraform apply -var="my_ip=$(curl -4 -s ifconfig.me)/32" \
   -var="key_name=<ed25519-keypair>" -var="windows_key_name=<rsa-keypair>"
 ```
 
-Then run the bootstrap script once per host to create the scanning account. Full setup in
-[`docs/runbook.md`](docs/runbook.md).
+Then run the bootstrap script once per host to create the scanning account. Each script
+documents its own usage at the top. Windows needs an RSA key pair, not ED25519, since the
+admin password is RSA-encrypted.
 
 ## Usage
 
