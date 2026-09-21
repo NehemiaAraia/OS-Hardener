@@ -1,20 +1,18 @@
 # OS Hardening Platform
 
-A cross-platform compliance scanner that audits Windows Server and RHEL against CIS
-benchmarks, scores only what it can actually verify, and remediates the gaps through
-Ansible, reporting what it refuses to touch and why.
+Scans Windows Server and RHEL against CIS benchmarks, scores what it can actually verify,
+and remediates the gaps with Ansible.
 
 **What it actually does:**
 
-- Scans Windows Server 2022 over WinRM and RHEL 9 over SSH from one codebase
-- Reports PASS, FAIL, or WARN. Never a pass for anything it could not verify
-- Tags every control to a CIS benchmark section and a NIST 800-53 control
-- Remediates through Ansible on both platforms, dry-run by default, and names the controls it will not fix
+- Scans Windows Server 2022 over WinRM and RHEL 9 over SSH, one codebase
+- Reports PASS, FAIL or WARN. Never a pass for anything it could not verify
+- Maps every control to a CIS section and a NIST 800-53 control
+- Remediates with Ansible, dry-run by default, and names what it won't fix
 
-**Example:** scans a stock Windows Server 2022 at 17% compliance. SMBv1 enabled, firewall
-off, Guest account active. Fixes five of them through Ansible and reaches 100%, then reports
-that three others could not be verified at all, because the scanning account deliberately
-lacks the rights to read them.
+**Example:** a stock Windows Server 2022 scans at 17%. SMBv1 on, firewall off, Guest
+account enabled. Ansible fixes five and the score hits 100%, with three more reported
+unverified because the scanning account has no rights to read them.
 
 ## Live Demo
 
