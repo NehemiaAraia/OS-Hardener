@@ -18,15 +18,13 @@ lacks the rights to read them.
 
 ## Live Demo
 
-![Demo](./docs/demo.gif)
-
 **RHEL 9**, 18% to 91%, seven controls remediated through Ansible
 
-https://github.com/user-attachments/assets/eafeca94-593a-4222-8ddf-d5576c4c9ba0
+![RHEL 9 demo](./docs/linux-demo.gif)
 
 **Windows Server 2022**, 17% to 100%, five controls remediated
 
-https://github.com/user-attachments/assets/6e311e5b-9b84-4dc0-854d-e0c95a749a39
+![Windows Server 2022 demo](./docs/windows-demo.gif)
 
 ## Tech stack
 
