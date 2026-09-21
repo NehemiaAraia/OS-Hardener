@@ -1,10 +1,10 @@
 # Live bring-up runbook
 
-Everything in this repo has been tested against recorded fixtures, never against
-a real machine. This is the order to bring the lab up, what "working" looks like
-at each step, and where it is most likely to break.
+Standing the lab up from scratch: provisioning, bootstrapping both hosts, and the
+first live scan. Covers what "working" looks like at each step and where it is most
+likely to break.
 
-Budget 2–3 hours for a first run. Step 4 is the one that will surface bugs.
+Budget 2 to 3 hours for a first run.
 
 ---
 
@@ -38,8 +38,12 @@ apply fails on an invalid CIDR.
 terraform init
 terraform apply \
   -var="my_ip=$(curl -4 -s ifconfig.me)/32" \
-  -var="key_name=<your-keypair>"
+  -var="key_name=<ed25519-keypair>" \
+  -var="windows_key_name=<rsa-keypair>"
 ```
+
+Windows AMIs reject ED25519 keys and the admin password is RSA-encrypted, so the
+two hosts need separate key pairs.
 
 **Expect:** two instances and one security group; `windows_public_ip` and
 `linux_public_ip` in the outputs.
@@ -56,12 +60,18 @@ terraform apply \
 
 ## 2. Bootstrap the Windows host
 
-RDP in as `Administrator` (decrypt the password with your key pair), copy
-`scripts/bootstrap_windows.ps1` over, and run it in an elevated PowerShell:
+No RDP needed. `user_data` brings up the WinRM listener at first boot, so the
+bootstrap runs remotely:
 
-```powershell
-.\bootstrap_windows.ps1 -OperatorCidr <your-ip>/32
+```bash
+aws ec2 get-password-data --instance-id <id> --priv-launch-key <rsa-key-in-PEM>
+export WINRM_USER=Administrator WINRM_PASS='<decrypted>'
+python scripts/push_and_run.py <windows-ip> scripts/bootstrap_windows.ps1 \
+  '-OperatorCidr <your-ip>/32'
 ```
+
+The key must be in PEM format. `ssh-keygen` writes OpenSSH format by default,
+which the AWS CLI cannot decrypt with.
 
 **Expect:** account created, HTTPS listener on 5986, HTTP listener removed, and
 `WINRM_USER` / `WINRM_PASS` printed **once**. Copy them immediately.
@@ -116,8 +126,8 @@ a self-signed certificate. Trust that cert on the Mac to drop the flag.
 
 **Expect:** a mix of PASS/FAIL/WARN and a report in `reports/`.
 
-**Expect breakage here.** Every probe command was written without a live host to
-test against. The likely failures, in order:
+Both platforms have been verified live, but a different image or locale can still
+shift a probe's output. What to look for:
 
 | Symptom | Cause | Fix |
 |---|---|---|
@@ -189,7 +199,7 @@ python dashboard.py            # https://127.0.0.1:8443
 
 ## 7. Resetting for another run
 
-- [ ] Both instances running, RDP and SSH already connected
+- [ ] Both instances running and reachable
 - [ ] Reset to a failing baseline so the before/after is real, not a replay
 
 **Resetting to a failing baseline** (so remediation has something to fix). These
@@ -205,9 +215,9 @@ sudo I_UNDERSTAND_THIS_WEAKENS_THIS_HOST=yes ./scripts/lab_reset_linux.sh
 ```
 
 The Linux script leaves password authentication **on** so your key login keeps
-working while the control fails again, and the Windows script leaves the
-firewall **enabled**, turning it off on an instance you reach over the network
-is how you lose access to the host.
+working while the control fails again. The Windows script does disable the
+firewall, which is safe because the WinRM allow-rule created at bootstrap
+survives it being re-enabled.
 
 ---
 
